@@ -1,6 +1,9 @@
 package com.example.cadastro.model;
 
+import com.example.cadastro.livros.LivrosModel;
 import jakarta.persistence.*;
+
+import java.util.List;
 
 @Entity // transforma a classe em entidade no banco de dados
 @Table(name = "tb_cadastro")
@@ -13,6 +16,9 @@ public class Usuario {
     private String nome;
     private String email;
     private int cpf;
+
+    @OneToMany(mappedBy = "usuario")
+    private List<LivrosModel> livrosModels;
 
     public Usuario() {
     }
