@@ -2,9 +2,15 @@ package com.example.cadastro.livros;
 
 import com.example.cadastro.model.Usuario;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "tb_livros")
+@NoArgsConstructor //construtor vazio
+@AllArgsConstructor //construtor com todos os atributos
+@Data //gets e sets
 public class LivrosModel {
 
     @Id
@@ -13,40 +19,8 @@ public class LivrosModel {
     private String nome;
     private int diasAlugado;
 
+    //@ManyToOne - um livro tem um unico dono temporário
     @ManyToOne
     @JoinColumn(name = "livros_id") //foreing key
     private Usuario usuario;
-
-    public LivrosModel() {
-    }
-
-    public LivrosModel(Long id, String nome, int diasAlugado) {
-        this.id = id;
-        this.nome = nome;
-        this.diasAlugado = diasAlugado;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-
-    public int getDiasAlugado() {
-        return diasAlugado;
-    }
-
-    public void setDiasAlugado(int diasAlugado) {
-        this.diasAlugado = diasAlugado;
-    }
 }
