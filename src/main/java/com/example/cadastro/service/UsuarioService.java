@@ -1,6 +1,7 @@
 package com.example.cadastro.service;
 
-import com.example.cadastro.model.Usuario;
+import com.example.cadastro.entities.Usuario;
+import com.example.cadastro.repository.EmprestimoRepository;
 import com.example.cadastro.repository.UsuarioRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -8,15 +9,17 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @Service
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
+    private final EmprestimoRepository emprestimoRepository;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository,
+                          EmprestimoRepository emprestimoRepository) {
         this.usuarioRepository = usuarioRepository;
+        this.emprestimoRepository = emprestimoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -48,6 +51,9 @@ public class UsuarioService {
 
     @Transactional
     public boolean excluir(Long id) {
+        if (emprestimoRepository.existsByUsuarioIdAndDataDevolucaoIsNull(id)) {
+            throw new IllegalArgumentException("Devolva os livros alugados antes de excluir o usuário");
+        }
         return usuarioRepository.findById(id)
                 .map(usuario -> {
                     usuarioRepository.delete(usuario);
@@ -55,4 +61,5 @@ public class UsuarioService {
                 })
                 .orElse(false);
     }
+
 }

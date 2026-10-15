@@ -1,6 +1,6 @@
 package com.example.cadastro.controller;
 
-import com.example.cadastro.model.Usuario;
+import com.example.cadastro.entities.Usuario;
 import com.example.cadastro.service.UsuarioService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

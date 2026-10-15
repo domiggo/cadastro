@@ -1,6 +1,5 @@
-package com.example.cadastro.livros;
+package com.example.cadastro.entities;
 
-import com.example.cadastro.model.Usuario;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,10 +16,4 @@ public class LivrosModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nome;
-    private int diasAlugado;
-
-    //@ManyToOne - um livro tem um unico dono temporário
-    @ManyToOne
-    @JoinColumn(name = "livros_id") //foreing key
-    private Usuario usuario;
 }
