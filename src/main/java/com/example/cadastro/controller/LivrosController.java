@@ -2,7 +2,9 @@ package com.example.cadastro.controller;
 
 import com.example.cadastro.entities.LivrosModel;
 import com.example.cadastro.service.LivrosService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,8 +30,17 @@ public class LivrosController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public LivrosModel cadastrar(@RequestBody LivrosModel livro) {
+    public LivrosModel cadastrar(@Valid @RequestBody LivrosModel livro) {
         return livrosService.cadastrar(livro);
+    }
+
+    @PatchMapping("/{livroId}/desativacao")
+    public ResponseEntity<Void> desativar(@PathVariable Long livroId) {
+        if (!livrosService.desativar(livroId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{livroId}")

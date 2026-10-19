@@ -1,7 +1,6 @@
 package com.example.cadastro.service;
 
 import com.example.cadastro.entities.Usuario;
-import com.example.cadastro.repository.EmprestimoRepository;
 import com.example.cadastro.repository.UsuarioRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
@@ -14,12 +13,9 @@ import java.util.Optional;
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
-    private final EmprestimoRepository emprestimoRepository;
 
-    public UsuarioService(UsuarioRepository usuarioRepository,
-                          EmprestimoRepository emprestimoRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
-        this.emprestimoRepository = emprestimoRepository;
     }
 
     @Transactional(readOnly = true)
@@ -29,7 +25,11 @@ public class UsuarioService {
 
     @Transactional
     public Usuario criar(Usuario usuario) {
+        if (usuarioRepository.existsByCpf(usuario.getCpf())) {
+            throw new IllegalStateException("Já existe um usuário cadastrado com esse CPF");
+        }
         usuario.setId(null);
+        usuario.setAtivo(true);
         return usuarioRepository.save(usuario);
     }
 
@@ -37,6 +37,12 @@ public class UsuarioService {
     public Optional<Usuario> atualizar(Long id, Usuario dadosRecebidos) {
         return usuarioRepository.findById(id)
                 .map(usuario -> {
+                    if (usuarioRepository.existsByCpfAndIdNot(dadosRecebidos.getCpf(), id)) {
+                        throw new IllegalStateException(
+                                "Já existe outro usuário cadastrado com esse CPF"
+                        );
+                    }
+
                     usuario.setNome(dadosRecebidos.getNome());
                     usuario.setEmail(dadosRecebidos.getEmail());
                     usuario.setCpf(dadosRecebidos.getCpf());
@@ -50,16 +56,16 @@ public class UsuarioService {
     }
 
     @Transactional
-    public boolean excluir(Long id) {
-        if (emprestimoRepository.existsByUsuarioIdAndDataDevolucaoIsNull(id)) {
-            throw new IllegalArgumentException("Devolva os livros alugados antes de excluir o usuário");
-        }
-        return usuarioRepository.findById(id)
-                .map(usuario -> {
-                    usuarioRepository.delete(usuario);
-                    return true;
-                })
-                .orElse(false);
-    }
+    public boolean desativar(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElse(null);
 
+        if (usuario == null) {
+            return false;
+        }
+
+        usuario.setAtivo(false);
+        usuarioRepository.save(usuario);
+        return true;
+    }
 }

@@ -1,20 +1,56 @@
 package com.example.cadastro.repository;
 
 
-import com.example.cadastro.emprestimos.Emprestimo;
+import com.example.cadastro.entities.Emprestimo;
+import com.example.cadastro.entities.SituacaoEmprestimo;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
 
-    Optional<Emprestimo> findByLivroIdAndDataDevolucaoIsNull(Long livroId);
+    Optional<Emprestimo> findByExemplarIdAndSituacao(Long exemplarId, SituacaoEmprestimo situacao);
 
-    List<Emprestimo> findByDataDevolucaoIsNull();
+    List<Emprestimo> findBySituacao(SituacaoEmprestimo situacao);
+
     List<Emprestimo> findByUsuarioId(Long usuarioId);
 
     boolean existsByUsuarioId(Long usuarioId);
-    boolean existsByLivroId(Long livroId);
-    boolean existsByUsuarioIdAndDataDevolucaoIsNull(Long usuarioId);
+
+    boolean existsByUsuarioIdAndSituacao(Long usuarioId, SituacaoEmprestimo situacao);
+
+    boolean existsByExemplarIdAndSituacao(Long exemplarId, SituacaoEmprestimo situacao);
+
+    @Query("""
+
+            select case when count(e) > 0 then true else false end
+        from Emprestimo e
+        where e.exemplar.livro.id = :livroId
+        """)
+    boolean existsByLivroId(@Param("livroId") Long livroId);
+
+    @Modifying
+    @Query("""
+        delete from Emprestimo e
+        where e.exemplar.livro.id = :livroId
+        """)
+    void excluirHistoricoDoLivro(@Param("livroId") Long livroId);
+
+    @Modifying
+    @Query("delete from Emprestimo e where e.usuario.id = :usuarioId")
+    void excluirHistoricoDoUsuario(@Param("usuarioId") Long usuarioId);
+
+    @Query("""
+    select case when count(e) > 0 then true else false end
+    from Emprestimo e
+    where e.exemplar.livro.id = :livroId
+      and e.situacao = :situacao
+    """)
+    boolean existeEmprestimoAtivoPorLivroESituacao(
+            @Param("livroId") Long livroId,
+            @Param("situacao") SituacaoEmprestimo situacao);
 }

@@ -1,10 +1,11 @@
 package com.example.cadastro.service;
 
-import com.example.cadastro.emprestimos.Emprestimo;
-import com.example.cadastro.entities.LivrosModel;
+import com.example.cadastro.entities.Emprestimo;
+import com.example.cadastro.entities.Exemplar;
+import com.example.cadastro.entities.SituacaoEmprestimo;
 import com.example.cadastro.entities.Usuario;
 import com.example.cadastro.repository.EmprestimoRepository;
-import com.example.cadastro.repository.LivrosRepository;
+import com.example.cadastro.repository.ExemplarRepository;
 import com.example.cadastro.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
@@ -17,16 +18,16 @@ import java.util.List;
 public class EmprestimoService {
 
     private final EmprestimoRepository emprestimoRepository;
-    private final LivrosRepository livrosRepository;
+    private final ExemplarRepository exemplarRepository;
     private final UsuarioRepository usuarioRepository;
 
     public EmprestimoService(
             EmprestimoRepository emprestimoRepository,
-            LivrosRepository livrosRepository,
+            ExemplarRepository exemplarRepository,
             UsuarioRepository usuarioRepository
     ) {
         this.emprestimoRepository = emprestimoRepository;
-        this.livrosRepository = livrosRepository;
+        this.exemplarRepository = exemplarRepository;
         this.usuarioRepository = usuarioRepository;
     }
 
@@ -37,7 +38,7 @@ public class EmprestimoService {
 
     @Transactional(readOnly = true)
     public List<Emprestimo> listarAtivos() {
-        return emprestimoRepository.findByDataDevolucaoIsNull();
+        return emprestimoRepository.findBySituacao(SituacaoEmprestimo.ATIVO);
     }
 
     @Transactional(readOnly = true)
@@ -46,24 +47,54 @@ public class EmprestimoService {
     }
 
     @Transactional
-    public Emprestimo emprestar(Long livroId, Long usuarioId) {
-        LivrosModel livro = livrosRepository.findById(livroId)
-                .orElseThrow(() -> new EntityNotFoundException("Livro não encontrado"));
+    public Emprestimo emprestar(Long exemplarId, Long usuarioId) {
+        Exemplar exemplar = exemplarRepository.findById(exemplarId)
+                .orElseThrow(() -> new EntityNotFoundException("Exemplar não encontrado"));
 
+        if(!exemplar.isAtivo() || !exemplar.getLivro().isAtivo()) {
+            throw new IllegalStateException("O exemplar ou o título está inativo");
+        }
 
-        boolean livroJaemprestado = emprestimoRepository.findByLivroIdAndDataDevolucaoIsNull(livroId).isPresent();
-
-        if(livroJaemprestado) {
-            throw new IllegalArgumentException("O livro já está emprestado no momento");
+        boolean emprestimoAtivoExiste = emprestimoRepository.existsByExemplarIdAndSituacao(exemplarId, SituacaoEmprestimo.ATIVO);
+        if (emprestimoAtivoExiste) {
+            throw new IllegalStateException("Este exemplar já está emprestado");
         }
 
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
+        if (!usuario.isAtivo()) {
+            throw new IllegalStateException("Não é possivel emprestar para um usuário inativo");
+        }
+
         Emprestimo emprestimo = new Emprestimo();
-        emprestimo.iniciar(livro, usuario, LocalDate.now());
+        emprestimo.iniciar(exemplar, usuario, LocalDate.now());
 
         return emprestimoRepository.save(emprestimo);
+    }
+
+    @Transactional
+    public Emprestimo renovar(Long emprestimoId) {
+        Emprestimo emprestimoAtual = emprestimoRepository.findById(emprestimoId)
+                .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado"));
+
+        if (!emprestimoAtual.getUsuario().isAtivo()) {
+            throw new IllegalStateException("Não é possivel renovar para um usuário inativo");
+        }
+
+        LocalDate dataRenovacao = LocalDate.now();
+
+        emprestimoAtual.registrarRenovacao(dataRenovacao);
+        emprestimoRepository.save(emprestimoAtual);
+
+        Emprestimo novoEmprestimo = new Emprestimo();
+        novoEmprestimo.iniciar(
+                emprestimoAtual.getExemplar(),
+                emprestimoAtual.getUsuario(),
+                dataRenovacao
+        );
+
+        return emprestimoRepository.save(novoEmprestimo);
     }
 
     @Transactional
