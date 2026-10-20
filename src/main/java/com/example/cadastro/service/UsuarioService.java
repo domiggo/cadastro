@@ -4,6 +4,7 @@ import com.example.cadastro.entities.Usuario;
 import com.example.cadastro.repository.UsuarioRepository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,7 +21,12 @@ public class UsuarioService {
 
     @Transactional(readOnly = true)
     public List<Usuario> listar() {
-        return usuarioRepository.findAll();
+        return usuarioRepository.findByAtivoTrue();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Usuario> listarInativos() {
+        return usuarioRepository.findByAtivoFalse();
     }
 
     @Transactional
@@ -65,6 +71,20 @@ public class UsuarioService {
         }
 
         usuario.setAtivo(false);
+        usuarioRepository.save(usuario);
+        return true;
+    }
+
+    @Transactional
+    public boolean ativar(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElse(null);
+
+        if (usuario == null) {
+            return false;
+        }
+
+        usuario.setAtivo(true);
         usuarioRepository.save(usuario);
         return true;
     }

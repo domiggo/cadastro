@@ -13,7 +13,14 @@ public interface ExemplarRepository extends JpaRepository<Exemplar, Long> {
 
     boolean existsByCodigoPatrimonio(String codigoPatrimonio);
 
-    List<Exemplar> findByLivroIdAndAtivoTrue(Long livroId);
+    @Query("""
+    select exemplar
+    from Exemplar exemplar
+    where exemplar.livro.id = :livroId
+      and exemplar.livro.ativo = true
+      and exemplar.ativo = true
+    """)
+    List<Exemplar> findAtivosPorLivro(@Param("livroId") Long livroId);
 
     @Modifying
     @Query("delete from Exemplar e where e.livro.id = :livroId")
@@ -36,4 +43,6 @@ public interface ExemplarRepository extends JpaRepository<Exemplar, Long> {
             @Param("livroId") Long livroId,
             @Param("situacao") SituacaoEmprestimo situacao
     );
+
+    List<Exemplar> findByLivroIdAndAtivoFalse(Long livroId);
 }

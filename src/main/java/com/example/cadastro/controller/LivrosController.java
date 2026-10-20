@@ -28,6 +28,11 @@ public class LivrosController {
         return livrosService.listarDisponiveis();
     }
 
+    @GetMapping("/inativos")
+    public List<LivrosModel> listarInativos() {
+        return livrosService.listarInativos();
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public LivrosModel cadastrar(@Valid @RequestBody LivrosModel livro) {
@@ -37,6 +42,15 @@ public class LivrosController {
     @PatchMapping("/{livroId}/desativacao")
     public ResponseEntity<Void> desativar(@PathVariable Long livroId) {
         if (!livrosService.desativar(livroId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{livroId}/ativacao")
+    public ResponseEntity<Void> ativar(@PathVariable Long livroId) {
+        if (!livrosService.ativar(livroId)) {
             return ResponseEntity.notFound().build();
         }
 

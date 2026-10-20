@@ -29,6 +29,11 @@ public class ExemplarController {
         return exemplarService.listarAtivosPorLivro(livroId);
     }
 
+    @GetMapping("/{livroId}/exemplares/inativos")
+    public List<Exemplar> listarExemplaresInativos(@PathVariable Long livroId) {
+        return exemplarService.listarInativosPorLivro(livroId);
+    }
+
     @GetMapping("/{livroId}/exemplares/disponiveis")
     public List<Exemplar> listarExemplaresDisponiveis(@PathVariable Long livroId) {
         return exemplarService.listarDisponiveisPorLivro(livroId);
@@ -40,6 +45,18 @@ public class ExemplarController {
             @PathVariable Long exemplarId
     ) {
         if (!exemplarService.desativar(livroId, exemplarId)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{livroId}/exemplares/{exemplarId}/ativacao")
+    public ResponseEntity<Void> ativar(
+            @PathVariable Long livroId,
+            @PathVariable Long exemplarId
+    ) {
+        if (!exemplarService.ativar(livroId, exemplarId)) {
             return ResponseEntity.notFound().build();
         }
 

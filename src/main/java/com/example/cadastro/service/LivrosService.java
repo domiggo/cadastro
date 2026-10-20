@@ -30,13 +30,19 @@ public class LivrosService {
 
     @Transactional(readOnly = true)
     public List<LivrosModel> listar() {
-        return livrosRepository.findAll();
+        return livrosRepository.findByAtivoTrue();
     }
 
     @Transactional(readOnly = true)
     public List<LivrosModel> listarDisponiveis() {
         return livrosRepository.findDisponiveis(SituacaoEmprestimo.ATIVO);
     }
+
+    @Transactional(readOnly = true)
+    public List<LivrosModel> listarInativos() {
+        return livrosRepository.findByAtivoFalse();
+    }
+
 
     @Transactional
     public LivrosModel cadastrar(LivrosModel livro) {
@@ -56,6 +62,20 @@ public class LivrosService {
         }
 
         livro.setAtivo(false);
+        livrosRepository.save(livro);
+        return true;
+    }
+
+    @Transactional
+    public boolean ativar(Long livroId) {
+        LivrosModel livro = livrosRepository.findById(livroId)
+                .orElse(null);
+
+        if (livro == null) {
+            return false;
+        }
+
+        livro.setAtivo(true);
         livrosRepository.save(livro);
         return true;
     }

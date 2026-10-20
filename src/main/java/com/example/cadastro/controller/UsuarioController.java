@@ -24,6 +24,11 @@ public class UsuarioController {
         return usuarioService.listar();
     }
 
+    @GetMapping("/inativos")
+    public List<Usuario> listarInativos() {
+        return usuarioService.listarInativos();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> buscarporId(@PathVariable Long id) {
         return usuarioService.buscarPorId(id)
@@ -49,6 +54,15 @@ public class UsuarioController {
         if (!usuarioService.desativar(id)) {
             return ResponseEntity.notFound().build();
         }
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/ativacao")
+    public ResponseEntity<Void> ativar(@PathVariable Long id) {
+        if (!usuarioService.ativar(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
         return ResponseEntity.noContent().build();
     }
 }

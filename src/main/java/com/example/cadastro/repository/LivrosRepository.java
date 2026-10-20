@@ -31,4 +31,7 @@ public interface LivrosRepository
     List<LivrosModel> findDisponiveis(
             @Param("situacao")SituacaoEmprestimo situacao
             );
+
+    List<LivrosModel> findByAtivoTrue();
+    List<LivrosModel> findByAtivoFalse();
 }

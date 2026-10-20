@@ -61,7 +61,16 @@ public class ExemplarService {
             throw new EntityNotFoundException("Livro não encontrado");
         }
 
-        return exemplarRepository.findByLivroIdAndAtivoTrue(livroId);
+        return exemplarRepository.findAtivosPorLivro(livroId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Exemplar> listarInativosPorLivro(Long livroId) {
+        if (!livrosRepository.existsById(livroId)) {
+            throw new EntityNotFoundException("Livro não encontrado");
+        }
+
+        return exemplarRepository.findByLivroIdAndAtivoFalse(livroId);
     }
 
     @Transactional(readOnly = true)
@@ -80,6 +89,7 @@ public class ExemplarService {
     public boolean desativar(Long livroId, Long exemplarId) {
         Exemplar exemplar = exemplarRepository.findById(exemplarId)
                 .orElse(null);
+
         if (exemplar == null) {
             return false;
         }
@@ -96,6 +106,35 @@ public class ExemplarService {
         }
 
         exemplar.setAtivo(false);
+        exemplarRepository.save(exemplar);
+        return true;
+    }
+
+    @Transactional
+    public boolean ativar(Long livroId, Long exemplarId) {
+        Exemplar exemplar = exemplarRepository.findById(exemplarId)
+                .orElse(null);
+
+        if (exemplar == null) {
+            return false;
+        }
+
+        if (!exemplar.getLivro().getId().equals(livroId)) {
+            return false;
+        }
+
+        if (emprestimoRepository.existsByExemplarIdAndSituacao(
+                exemplarId,
+                SituacaoEmprestimo.ATIVO
+        )) {
+            throw new IllegalStateException("Não é possível reativar um exemplar emprestado");
+        }
+
+        if (!exemplar.getLivro().isAtivo()) {
+            throw new IllegalStateException("Não é possível reativar um exemplar de um livro inativo");
+        }
+
+        exemplar.setAtivo(true);
         exemplarRepository.save(exemplar);
         return true;
     }
