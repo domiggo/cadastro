@@ -5,6 +5,7 @@ import com.example.cadastro.service.EmprestimoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -47,5 +48,20 @@ public class EmprestimoController {
     @ResponseStatus(HttpStatus.CREATED)
     public Emprestimo renovar(@PathVariable Long emprestimoId) {
         return emprestimoService.renovar(emprestimoId);
+    }
+
+    @GetMapping("/atrasados")
+    public List<Emprestimo> listarAtrasados() {
+        return emprestimoService.listarAtrasados();
+    }
+
+    @GetMapping("/usuario/{usuarioId}/atrasados")
+    public List<Emprestimo> listarEmprestimosAtrasadosPorUsuario(@PathVariable Long usuarioId) {
+        return emprestimoService.emprestimosAtrasadosPorUsuario(usuarioId);
+    }
+
+    @GetMapping("/usuario/{usuarioId}/multa-total")
+    public BigDecimal listarMultaTotalPorUsuario(@PathVariable Long usuarioId) {
+        return emprestimoService.calcularMultaTotalPorUsuario(usuarioId);
     }
 }

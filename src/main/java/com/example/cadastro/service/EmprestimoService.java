@@ -8,9 +8,11 @@ import com.example.cadastro.repository.EmprestimoRepository;
 import com.example.cadastro.repository.ExemplarRepository;
 import com.example.cadastro.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -42,8 +44,27 @@ public class EmprestimoService {
     }
 
     @Transactional(readOnly = true)
+    public List<Emprestimo> listarAtrasados() {
+        return emprestimoRepository.findAtrasados(
+                SituacaoEmprestimo.ATIVO,
+                LocalDate.now());
+    }
+
+    @Transactional(readOnly = true)
     public List<Emprestimo> listarPorUsuario(Long usuarioId) {
         return emprestimoRepository.findByUsuarioId(usuarioId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Emprestimo> emprestimosAtrasadosPorUsuario(Long usuarioId) {
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+
+        return emprestimoRepository.findEmprestimosAtrasadosPorUsuario(
+                usuarioId,
+                SituacaoEmprestimo.ATIVO,
+                LocalDate.now()
+        );
     }
 
     @Transactional
@@ -64,7 +85,7 @@ public class EmprestimoService {
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
 
         if (!usuario.isAtivo()) {
-            throw new IllegalStateException("Não é possivel emprestar para um usuário inativo");
+            throw new IllegalStateException("Não é possível emprestar para um usuário inativo");
         }
 
         Emprestimo emprestimo = new Emprestimo();
@@ -79,7 +100,7 @@ public class EmprestimoService {
                 .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado"));
 
         if (!emprestimoAtual.getUsuario().isAtivo()) {
-            throw new IllegalStateException("Não é possivel renovar para um usuário inativo");
+            throw new IllegalStateException("Não é possível renovar para um usuário inativo");
         }
 
         LocalDate dataRenovacao = LocalDate.now();
@@ -105,5 +126,20 @@ public class EmprestimoService {
         emprestimo.registrarDevolucao(LocalDate.now());
 
         return emprestimoRepository.save(emprestimo);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal calcularMultaTotalPorUsuario(Long usuarioId) {
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new EntityNotFoundException("Usuário não encontrado");
+        }
+        List<Emprestimo> emprestimos = listarPorUsuario(usuarioId);
+        BigDecimal multas = BigDecimal.ZERO;
+
+        for (Emprestimo emprestimo : emprestimos) {
+            multas = multas.add(emprestimo.getMulta());
+        }
+
+        return multas;
     }
 }
