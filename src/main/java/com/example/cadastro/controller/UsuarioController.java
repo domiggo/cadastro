@@ -1,23 +1,26 @@
 package com.example.cadastro.controller;
 
+import com.example.cadastro.entities.PagamentoMulta;
 import com.example.cadastro.entities.Usuario;
+import com.example.cadastro.service.PagamentoMultaService;
 import com.example.cadastro.service.UsuarioService;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+    private final PagamentoMultaService pagamentoMultaService;
 
-    public UsuarioController(UsuarioService usuarioService) {
-        this.usuarioService = usuarioService;
-    }
 
     @GetMapping
     public List<Usuario> listar() {
@@ -64,5 +67,15 @@ public class UsuarioController {
         }
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{usuarioId}/multas/saldo-pendente")
+    public BigDecimal consultarSaldoMultasPendentesPorUsuario(@PathVariable Long usuarioId) {
+        return pagamentoMultaService.calcularSaldoMultasPendentesPorUsuario(usuarioId);
+    }
+
+    @GetMapping("/{usuarioId}/pagamentos")
+    public List<PagamentoMulta> listarPagamentosPorUsuario(@PathVariable Long usuarioId) {
+        return pagamentoMultaService.listarPagamentosPorUsuario(usuarioId);
     }
 }

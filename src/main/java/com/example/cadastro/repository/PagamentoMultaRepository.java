@@ -6,9 +6,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 
 public interface PagamentoMultaRepository extends JpaRepository<PagamentoMulta, Long> {
+
+    List<PagamentoMulta> findByEmprestimoIdOrderByDataPagamentoAsc(Long emprestimoId);
+    List<PagamentoMulta> findByEmprestimoUsuarioIdOrderByDataPagamentoAsc(Long usuarioId);
+
 
     @Query("""
         select coalesce(sum(p.valor), 0)

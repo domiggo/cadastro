@@ -1,5 +1,6 @@
 package com.example.cadastro.repository;
 
+import com.example.cadastro.entities.PagamentoMulta;
 import com.example.cadastro.entities.Usuario;
 import org.springframework.data.jpa.repository.JpaRepository;
 
