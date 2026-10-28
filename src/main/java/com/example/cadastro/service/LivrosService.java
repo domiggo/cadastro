@@ -5,6 +5,7 @@ import com.example.cadastro.entities.SituacaoEmprestimo;
 import com.example.cadastro.repository.EmprestimoRepository;
 import com.example.cadastro.repository.ExemplarRepository;
 import com.example.cadastro.repository.LivrosRepository;
+import com.example.cadastro.repository.PagamentoMultaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +18,17 @@ public class LivrosService {
     private final LivrosRepository livrosRepository;
     private final EmprestimoRepository emprestimoRepository;
     private final ExemplarRepository exemplarRepository;
+    private final PagamentoMultaRepository pagamentoMultaRepository;
 
     public LivrosService(
             LivrosRepository livrosRepository,
             EmprestimoRepository emprestimoRepository,
-            ExemplarRepository exemplarRepository
+            ExemplarRepository exemplarRepository, PagamentoMultaRepository pagamentoMultaRepository
     ) {
         this.livrosRepository = livrosRepository;
         this.emprestimoRepository = emprestimoRepository;
         this.exemplarRepository = exemplarRepository;
+        this.pagamentoMultaRepository = pagamentoMultaRepository;
     }
 
     @Transactional(readOnly = true)
@@ -86,13 +89,14 @@ public class LivrosService {
                 .orElseThrow(() ->
                         new EntityNotFoundException("Livro não encontrado"));
 
-        // Impede apagar um livro referenciado quando há emprestimos ativos vinculados ao livro
+        // Impede apagar um livro referenciado quando há empréstimos ativos vinculados ao livro
         if (emprestimoRepository.existeEmprestimoAtivoPorLivroESituacao(livroId, SituacaoEmprestimo.ATIVO)) {
             throw new IllegalStateException(
                     "Não é possível excluir um livro com exemplares emprestados"
             );
         }
 
+        pagamentoMultaRepository.excluirPagamentosPorLivroId(livroId);
         emprestimoRepository.excluirHistoricoDoLivro(livroId);
         exemplarRepository.excluirPorLivroId(livroId);
         livrosRepository.delete(livro);

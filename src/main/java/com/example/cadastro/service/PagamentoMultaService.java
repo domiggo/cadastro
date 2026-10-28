@@ -71,6 +71,10 @@ public class PagamentoMultaService {
             throw new IllegalArgumentException("É obrigatório possuir uma data de pagamento");
         }
 
+        if (dataDePagamento.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("A data de pagamento não pode ser futura");
+        }
+
         pagamentoMulta.setEmprestimo(emprestimo);
         pagamentoMulta.setValor(valorPago);
         pagamentoMulta.setDataPagamento(dataDePagamento);
