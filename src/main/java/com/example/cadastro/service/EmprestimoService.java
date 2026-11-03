@@ -8,7 +8,6 @@ import com.example.cadastro.repository.EmprestimoRepository;
 import com.example.cadastro.repository.ExemplarRepository;
 import com.example.cadastro.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,8 +56,9 @@ public class EmprestimoService {
 
     @Transactional(readOnly = true)
     public List<Emprestimo> emprestimosAtrasadosPorUsuario(Long usuarioId) {
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new EntityNotFoundException("Usuário não encontrado");
+        }
 
         return emprestimoRepository.findEmprestimosAtrasadosPorUsuario(
                 usuarioId,

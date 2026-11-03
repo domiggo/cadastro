@@ -4,7 +4,6 @@ package com.example.cadastro.repository;
 import com.example.cadastro.entities.Emprestimo;
 import com.example.cadastro.entities.SituacaoEmprestimo;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 
@@ -33,27 +32,6 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
         where e.exemplar.livro.id = :livroId
         """)
     boolean existsByLivroId(@Param("livroId") Long livroId);
-
-    @Modifying
-    @Query("""
-        delete from Emprestimo e
-        where e.exemplar.livro.id = :livroId
-        """)
-    void excluirHistoricoDoLivro(@Param("livroId") Long livroId);
-
-    @Modifying
-    @Query("delete from Emprestimo e where e.usuario.id = :usuarioId")
-    void excluirHistoricoDoUsuario(@Param("usuarioId") Long usuarioId);
-
-    @Query("""
-    select case when count(e) > 0 then true else false end
-    from Emprestimo e
-    where e.exemplar.livro.id = :livroId
-      and e.situacao = :situacao
-    """)
-    boolean existeEmprestimoAtivoPorLivroESituacao(
-            @Param("livroId") Long livroId,
-            @Param("situacao") SituacaoEmprestimo situacao);
 
     @Query("""
     select e

@@ -2,7 +2,6 @@ package com.example.cadastro.repository;
 
 import com.example.cadastro.entities.PagamentoMulta;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,10 +22,4 @@ public interface PagamentoMultaRepository extends JpaRepository<PagamentoMulta, 
         """)
     BigDecimal somarPorEmprestimoId(@Param("emprestimoId") Long emprestimoId);
 
-    @Modifying
-    @Query("""
-    delete from PagamentoMulta p
-    where p.emprestimo.exemplar.livro.id = :livroId
-    """)
-    void excluirPagamentosPorLivroId(@Param("livroId") Long livroId);
 }

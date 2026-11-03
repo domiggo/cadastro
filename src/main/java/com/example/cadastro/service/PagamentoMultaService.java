@@ -7,7 +7,6 @@ import com.example.cadastro.repository.PagamentoMultaRepository;
 import com.example.cadastro.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,7 +14,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @Service
 @AllArgsConstructor
@@ -48,32 +46,45 @@ public class PagamentoMultaService {
     @Transactional
     public PagamentoMulta registrarPagamento(Long emprestimoId, BigDecimal valorPago, LocalDate dataDePagamento) {
         Emprestimo emprestimo = emprestimoRepository.findById(emprestimoId)
-                .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado."));
+
+
+        if (dataDePagamento == null) {
+            throw new IllegalArgumentException("É obrigatório possuir uma data de pagamento.");
+        }
+
+        if (dataDePagamento.isBefore(emprestimo.getDataEmprestimo())) {
+            throw new IllegalArgumentException("A data de pagamento não pode ser anterior ao empréstimo");
+        }
+
+        if (dataDePagamento.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("A data de pagamento não pode ser futura.");
+        }
 
         if (valorPago == null){
-            throw new IllegalArgumentException("É necessário um valor inicial para realizar o pagamento");
+            throw new IllegalArgumentException("É necessário um valor inicial para realizar o pagamento.");
         }
 
         if (valorPago.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Valor inválido para o pagamento");
+            throw new IllegalArgumentException("Valor inválido para o pagamento.");
 
+        }
+
+        if (valorPago.stripTrailingZeros().scale() > 2) {
+            throw new IllegalArgumentException("O valor do pagamento deve ter no máximo duas casas decimais.");
         }
 
         BigDecimal saldoAtual = saldoDaMulta(emprestimoId);
 
+        if (saldoAtual.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Não há multa pendente para este empréstimo.");
+        }
+
         if (valorPago.compareTo(saldoAtual) > 0) {
-            throw new IllegalArgumentException("Valor desejado é maior que o valor da multa");
+            throw new IllegalArgumentException("Valor desejado é maior que o valor da multa.");
         }
 
         PagamentoMulta pagamentoMulta = new PagamentoMulta();
-
-        if (dataDePagamento == null) {
-            throw new IllegalArgumentException("É obrigatório possuir uma data de pagamento");
-        }
-
-        if (dataDePagamento.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("A data de pagamento não pode ser futura");
-        }
 
         pagamentoMulta.setEmprestimo(emprestimo);
         pagamentoMulta.setValor(valorPago);
@@ -85,7 +96,7 @@ public class PagamentoMultaService {
     @Transactional(readOnly = true)
     public BigDecimal calcularSaldoMultasPendentesPorUsuario(Long usuarioId) {
         if (!usuarioRepository.existsById(usuarioId)) {
-            throw new EntityNotFoundException("Usuário não encontrado");
+            throw new EntityNotFoundException("Usuário não encontrado.");
         }
 
         List<Emprestimo> emprestimos = emprestimoRepository.findByUsuarioId(usuarioId);
@@ -107,7 +118,7 @@ public class PagamentoMultaService {
     @Transactional(readOnly = true)
     public List<PagamentoMulta> listarPagamentosPorUsuario(Long usuarioId) {
         if (!usuarioRepository.existsById(usuarioId)) {
-            throw new EntityNotFoundException("Usuário não encontrado");
+            throw new EntityNotFoundException("Usuário não encontrado.");
         }
 
         return pagamentoMultaRepository.findByEmprestimoUsuarioIdOrderByDataPagamentoAsc(usuarioId);
