@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "tb_livros")
 @NoArgsConstructor //construtor vazio
-@AllArgsConstructor //construtor com todos os atributos
 @Data //gets e sets
 public class LivrosModel {
 

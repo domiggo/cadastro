@@ -51,6 +51,10 @@ public class EmprestimoService {
 
     @Transactional(readOnly = true)
     public List<Emprestimo> listarPorUsuario(Long usuarioId) {
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new EntityNotFoundException("Usuário não encontrado");
+        }
+
         return emprestimoRepository.findByUsuarioId(usuarioId);
     }
 
@@ -130,9 +134,7 @@ public class EmprestimoService {
 
     @Transactional(readOnly = true)
     public BigDecimal calcularMultaTotalPorUsuario(Long usuarioId) {
-        if (!usuarioRepository.existsById(usuarioId)) {
-            throw new EntityNotFoundException("Usuário não encontrado");
-        }
+
         List<Emprestimo> emprestimos = listarPorUsuario(usuarioId);
         BigDecimal multas = BigDecimal.ZERO;
 

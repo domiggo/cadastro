@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @Entity // transforma a classe em entidade no banco de dados
 @Table(name = "tb_cadastro")
 @NoArgsConstructor
-@AllArgsConstructor
 @Data
 public class Usuario {
 

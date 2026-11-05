@@ -1,0 +1,93 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 24px;
+    background-color: #f4f6f8;
+    color: #222;
+}
+
+header {
+    background-color: #176b57;
+    color: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+}
+header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+nav button {
+    padding: 10px 14px;
+    border: 1px solid #176b57;
+    border-radius: 6px;
+    background-color: #f4f6f8;
+    color: #176b57;
+    cursor: pointer;
+}
+
+main {
+    margin-top: 29px;
+    padding: 24px;
+    background-color: white;
+    border-radius: 8px;
+}
+
+main h2 {
+    margin-top: 0;
+}
+
+nav button:hover,
+nav button:focus-visible {
+    background-color: #176b57;
+    color: white;
+}
+
+nav button.ativo {
+    background-color: #176b57;
+    color: white;
+}
+
+#form-usuario {
+    display: grid;
+    gap: 8px;
+    max-width: 420px;
+    margin-bottom: 24px;
+}
+
+#form-usuario input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+}
+
+#form-usuario button {
+    justify-self: start;
+    padding: 10px 14px;
+    border: 0;
+    border-radius: 6px;
+    background-color: #176b57;
+    color: white;
+    cursor: pointer;
+}
+
+#lista-usuarios {
+    display: grid;
+    gap: 8px;
+    padding-left: 24px;
+}
+
+#lista-usuarios li {
+    padding: 10px 12px;
+    border-radius: 6px;
+    background-color: #f4f6f8;
+}
