@@ -24,6 +24,7 @@
         <section id="secao-usuarios" hidden>
             <h3>Cadastrar usuário</h3>
             <p id="mensagem-form" role="status" aria-live="polite" hidden></p>
+
             <form id="form-usuario">
                 <label for="nome">Nome</label>
                 <input id="nome" name="nome" type="text" required>
@@ -32,16 +33,47 @@
                 <input id="email" name="email" type="email" required>
 
                 <label for="cpf">CPF (11 dígitos)</label>
-                <input id="cpf" name="cpf" type="text"
-                       maxlength="11" pattern="[0-9]{11}" required>
+                <input
+                        id="cpf"
+                        name="cpf"
+                        type="text"
+                        maxlength="11"
+                        pattern="[0-9]{11}"
+                        required
+                >
 
                 <button type="submit">Cadastrar</button>
             </form>
+
             <h3>Usuários cadastrados</h3>
             <ul id="lista-usuarios"></ul>
 
+            <h3>Usuários inativos</h3>
             <button id="botao-inativos" type="button">Ver usuários inativos</button>
             <ul id="lista-inativos" hidden></ul>
+
+            <h3>Editar usuário</h3>
+            <form id="form-editar-usuario" hidden>
+                <input id="editar-id" type="hidden">
+
+                <label for="editar-nome">Nome</label>
+                <input id="editar-nome" type="text" required>
+
+                <label for="editar-email">E-mail</label>
+                <input id="editar-email" type="email" required>
+
+                <label for="editar-cpf">CPF (11 dígitos)</label>
+                <input
+                        id="editar-cpf"
+                        type="text"
+                        maxlength="11"
+                        pattern="[0-9]{11}"
+                        required
+                >
+
+                <button type="submit">Salvar alterações</button>
+                <button id="cancelar-edicao" type="button">Cancelar</button>
+            </form>
         </section>
     </main>
 

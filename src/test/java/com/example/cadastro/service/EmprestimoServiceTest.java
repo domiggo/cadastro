@@ -40,4 +40,18 @@ class EmprestimoServiceTest {
         verify(emprestimoRepository, never())
                 .findByUsuarioId(usuarioId);
     }
+
+    @Test
+    void deveFalharAoCalcularMultaTotalDeUsuarioInexistente() {
+        Long usuarioId = 1L;
+
+        when(usuarioRepository.existsById(usuarioId))
+                .thenReturn(false);
+
+        assertThrows(EntityNotFoundException.class, () ->
+                emprestimoService.calcularMultaTotalPorUsuario(usuarioId));
+
+        verify(emprestimoRepository, never())
+                .findByUsuarioId(usuarioId);
+    }
 }
