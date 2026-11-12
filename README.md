@@ -17,6 +17,16 @@ Na pasta do projeto, execute:
 
 No Windows, use `mvnw.cmd spring-boot:run`. A API inicia, por padrão, em `http://localhost:8080`.
 
+## Interface web
+
+Ao iniciar a aplicação, a interface estática fica disponível em `http://localhost:8080/`.
+Ela apresenta seções para usuários, livros e exemplares, empréstimos e multas.
+
+A seção de usuários permite cadastrar, listar, editar, desativar e reativar usuários.
+A seção de livros e exemplares ainda não está totalmente integrada à interface; para
+essas operações, use os endpoints da API descritos abaixo. As seções de empréstimos
+e multas também são apenas informativas na interface.
+
 Para executar os testes:
 
 ```bash
@@ -67,7 +77,7 @@ Exemplo de cadastro:
 
 | Método | Caminho | Ação |
 |---|---|---|
-| `GET` | `/livros` | Lista todos os livros |
+| `GET` | `/livros` | Lista livros ativos |
 | `GET` | `/livros/disponiveis` | Lista livros com exemplar disponível |
 | `GET` | `/livros/inativos` | Lista livros desativados |
 | `POST` | `/livros` | Cadastra um livro |

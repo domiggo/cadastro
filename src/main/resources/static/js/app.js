@@ -17,6 +17,11 @@ const campoEditarEmail = document.querySelector("#editar-email");
 const campoEditarCpf = document.querySelector("#editar-cpf");
 const botaoCancelarEdicao = document.querySelector("#cancelar-edicao");
 
+const secaoLivros = document.querySelector("#secao-livros");
+const formLivro = document.querySelector("#form-livro");
+const listaLivros = document.querySelector("#lista-livros");
+const mensagemLivros = document.querySelector("#mensagem-livros");
+
 const descricoesPorSecao = {
     "Usuários": "Aqui você poderá consultar e cadastrar usuários.",
     "Livros e exemplares": "Aqui você poderá consultar livros e exemplares.",
@@ -54,9 +59,14 @@ botoesNavegacao.forEach((botao) => {
         botao.classList.add("ativo");
 
         secaoUsuarios.hidden = nomeSecao !== "Usuários";
+        secaoLivros.hidden = nomeSecao !== "Livros e exemplares";
 
         if (!secaoUsuarios.hidden) {
             carregarUsuarios();
+        }
+
+        if (!secaoLivros.hidden) {
+            carregarLivros();
         }
     });
 });
@@ -294,5 +304,146 @@ async function reativarUsuario(usuario) {
         mostrarMensagem("Usuário reativado.");
     } catch (erro) {
         mostrarMensagem(`Falha ao reativar: ${erro.message}`);
+    }
+}
+
+function mostrarMensagemLivros(texto) {
+    mensagemLivros.textContent = texto;
+    mensagemLivros.hidden = false;
+}
+
+formLivro.addEventListener("submit", async (evento) => {
+    evento.preventDefault();
+    mensagemLivros.hidden = true;
+
+    const dados = Object.fromEntries(new FormData(formLivro));
+
+    try {
+        const resposta = await fetch("/livros", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(dados)
+        });
+
+        if (!resposta.ok) {
+            throw new Error(await mensagemDeErroDaResposta(resposta));
+        }
+
+        formLivro.reset();
+        await carregarLivros();
+        mostrarMensagemLivros("Livro cadastrado com sucesso.");
+    } catch (erro) {
+        mostrarMensagemLivros(`Falha ao cadastrar livro: ${erro.message}`);
+    }
+});
+
+async function carregarLivros() {
+    listaLivros.replaceChildren();
+
+    try {
+        const resposta = await fetch("/livros");
+
+        if (!resposta.ok) {
+            throw new Error(await mensagemDeErroDaResposta(resposta));
+        }
+
+        const livros = await resposta.json();
+
+        if (livros.length === 0) {
+            const item = document.createElement("li");
+            item.textContent = "Nenhum livro cadastrado.";
+            listaLivros.append(item);
+            return;
+        }
+
+        livros.forEach((livro) => {
+            const item = document.createElement("li");
+            const tituloLivro = document.createElement("h4");
+            tituloLivro.textContent = `${livro.id} — ${livro.nome}`;
+
+            const formularioExemplar = document.createElement("form");
+            const rotulo = document.createElement("label");
+            const campoCodigo = document.createElement("input");
+            const botaoCadastrar = document.createElement("button");
+            const listaExemplares = document.createElement("ul");
+
+            rotulo.textContent = "Código de patrimônio";
+            campoCodigo.type = "text";
+            campoCodigo.required = true;
+            botaoCadastrar.type = "submit";
+            botaoCadastrar.textContent = "Cadastrar exemplar";
+
+            formularioExemplar.append(rotulo, campoCodigo, botaoCadastrar);
+            formularioExemplar.addEventListener("submit", async (evento) => {
+                evento.preventDefault();
+                await cadastrarExemplar(livro.id, campoCodigo, listaExemplares);
+            });
+
+            const botaoVerExemplares = document.createElement("button");
+            botaoVerExemplares.type = "button";
+            botaoVerExemplares.textContent = "Ver exemplares ativos";
+            botaoVerExemplares.addEventListener("click", () => {
+                carregarExemplares(livro.id, listaExemplares);
+            });
+
+            item.append(
+                tituloLivro,
+                formularioExemplar,
+                botaoVerExemplares,
+                listaExemplares
+            );
+            listaLivros.append(item);
+        });
+    } catch (erro) {
+        mostrarMensagemLivros(`Falha ao carregar livros: ${erro.message}`);
+    }
+}
+
+async function cadastrarExemplar(livroId, campoCodigo, listaExemplares) {
+    const codigo = campoCodigo.value.trim();
+
+    try {
+        const url = `/livros/${livroId}/exemplares?codigoPatrimonio=${encodeURIComponent(codigo)}`;
+        const resposta = await fetch(url, { method: "POST" });
+
+        if (!resposta.ok) {
+            throw new Error(await mensagemDeErroDaResposta(resposta));
+        }
+
+        campoCodigo.value = "";
+        await carregarExemplares(livroId, listaExemplares);
+        mostrarMensagemLivros("Exemplar cadastrado com sucesso.");
+    } catch (erro) {
+        mostrarMensagemLivros(`Falha ao cadastrar exemplar: ${erro.message}`);
+    }
+}
+
+async function carregarExemplares(livroId, lista) {
+    lista.replaceChildren();
+
+    try {
+        const resposta = await fetch(`/livros/${livroId}/exemplares/ativos`);
+
+        if (!resposta.ok) {
+            throw new Error(await mensagemDeErroDaResposta(resposta));
+        }
+
+        const exemplares = await resposta.json();
+
+        if (exemplares.length === 0) {
+            const item = document.createElement("li");
+            item.textContent = "Este livro não possui exemplares ativos.";
+            lista.append(item);
+            return;
+        }
+
+        exemplares.forEach((exemplar) => {
+            const item = document.createElement("li");
+            item.textContent =
+                `Exemplar ${exemplar.id} — patrimônio: ${exemplar.codigoPatrimonio}`;
+            lista.append(item);
+        });
+    } catch (erro) {
+        mostrarMensagemLivros(`Falha ao carregar exemplares: ${erro.message}`);
     }
 }

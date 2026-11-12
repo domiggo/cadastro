@@ -75,6 +75,19 @@
                 <button id="cancelar-edicao" type="button">Cancelar</button>
             </form>
         </section>
+        <section id="secao-livros"  hidden>
+            <h3>Cadastrar livro</h3>
+            <p id="mensagem-livros" role="status" aria-live="polite" hidden></p>
+
+            <form id="form-livro">
+                <label for="nome-livro">Nome do livro</label>
+                <input id="nome-livro" name="nome" type="text" required>
+                <button id="botao-livro" type="button">Cadastrar livro</button>
+            </form>
+
+            <h3>Livros cadastrados</h3>
+            <ul id="lista-livros" hidden></ul>
+        </section>
     </main>
 
 <script src="/js/app.js" type="module"></script>
