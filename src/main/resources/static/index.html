@@ -7,6 +7,7 @@
         <link rel="stylesheet" href="/css/style.css">
     </head>
 <body>
+    <a class="atalho-conteudo" href="#conteudo-principal">Pular para o conteúdo</a>
     <header>
         <h1>Biblioteca · Cadastro e empréstimos</h1>
     </header>
@@ -18,7 +19,7 @@
         <button type="button">Multas e pagamentos</button>
     </nav>
 
-    <main>
+    <main id="conteudo-principal" tabindex="-1">
         <h2>Bem-vindo</h2>
         <p>Escolha uma seção para começar.</p>
         <section id="secao-usuarios" hidden>
@@ -47,10 +48,16 @@
 
             <h3>Usuários cadastrados</h3>
             <ul id="lista-usuarios"></ul>
+            <button id="botao-mostrar-usuarios" class="botao-lista-expandir" type="button" hidden>
+                Mostrar todos os usuários
+            </button>
 
             <h3>Usuários inativos</h3>
             <button id="botao-inativos" type="button">Ver usuários inativos</button>
             <ul id="lista-inativos" hidden></ul>
+            <button id="botao-mostrar-inativos" class="botao-lista-expandir" type="button" hidden>
+                Mostrar todos os usuários inativos
+            </button>
 
             <h3>Editar usuário</h3>
             <form id="form-editar-usuario" hidden>
@@ -82,14 +89,77 @@
             <form id="form-livro">
                 <label for="nome-livro">Nome do livro</label>
                 <input id="nome-livro" name="nome" type="text" required>
-                <button id="botao-livro" type="button">Cadastrar livro</button>
+                <button id="botao-livro" type="submit">Cadastrar livro</button>
             </form>
 
             <h3>Livros cadastrados</h3>
             <ul id="lista-livros" hidden></ul>
+
+            <h3>Livros inativos</h3>
+            <button id="botao-livros-inativos" type="button">
+                Ver livros inativos
+            </button>
+            <ul id="lista-livros-inativos" hidden></ul>
+        </section>
+        <section id="secao-emprestimos" hidden>
+            <h3>Registrar empréstimo</h3>
+            <p id="mensagem-emprestimos" role="status" aria-live="polite" hidden></p>
+
+            <form id="form-emprestimo">
+                <label for="usuario-emprestimo">Usuário</label>
+                <select id="usuario-emprestimo" name="usuarioId" required></select>
+
+                <label for="exemplar-emprestimo">Exemplar disponível</label>
+                <select id="exemplar-emprestimo" name="exemplarId" required></select>
+
+                <button type="submit">Registrar empréstimo</button>
+            </form>
+
+            <h3>Empréstimos ativos</h3>
+            <ul id="lista-emprestimos"></ul>
+
+            <h3>Histórico de empréstimos</h3>
+            <button id="botao-historico-emprestimos" type="button">
+                Consultar histórico
+            </button>
+            <div class="filtros-historico">
+                <div>
+                    <label for="filtro-historico-emprestimos">Filtrar por usuário</label>
+                    <select id="filtro-historico-emprestimos" disabled>
+                        <option value="">Todos os usuários</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filtro-situacao-emprestimos">Filtrar por situação</label>
+                    <select id="filtro-situacao-emprestimos" disabled>
+                        <option value="">Todas as situações</option>
+                        <option value="ATIVO">Ativos</option>
+                        <option value="DEVOLVIDO">Devolvidos</option>
+                        <option value="RENOVADO">Renovados</option>
+                    </select>
+                </div>
+            </div>
+            <ul id="lista-historico-emprestimos" hidden></ul>
+        </section>
+        <section id="secao-multas" hidden>
+            <h3>Consultar multas e pagamentos</h3>
+            <p id="mensagem-multas" role="status" aria-live="polite" hidden></p>
+
+            <h3>Empréstimos atrasados</h3>
+            <ul id="lista-emprestimos-atrasados"></ul>
+
+            <label for="usuario-multas">Usuário</label>
+            <select id="usuario-multas" required></select>
+
+            <p id="saldo-multas"></p>
+
+            <h3>Multas por empréstimo</h3>
+            <ul id="lista-multas"></ul>
+
+            <h3>Pagamentos registrados</h3>
+            <ul id="lista-pagamentos"></ul>
         </section>
     </main>
-
 <script src="/js/app.js" type="module"></script>
 </body>
 </html>
