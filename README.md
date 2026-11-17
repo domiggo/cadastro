@@ -23,15 +23,24 @@ Ao iniciar a aplicação, a interface estática fica disponível em `http://loca
 Ela apresenta seções para usuários, livros e exemplares, empréstimos e multas.
 
 A seção de usuários permite cadastrar, listar, editar, desativar e reativar usuários.
-A seção de livros e exemplares ainda não está totalmente integrada à interface; para
-essas operações, use os endpoints da API descritos abaixo. As seções de empréstimos
-e multas também são apenas informativas na interface.
+A seção de livros e exemplares permite cadastrar livros e exemplares, consultar itens
+ativos e inativos e ativar ou desativar seus registros. A seção de empréstimos permite
+registrar empréstimos, acompanhar e devolver empréstimos ativos, renovar empréstimos
+na data prevista e consultar o histórico com filtros por usuário e situação. A seção
+de multas permite consultar empréstimos atrasados, saldos pendentes e pagamentos,
+além de registrar pagamentos parciais.
 
 Para executar os testes:
 
 ```bash
 ./mvnw test
 ```
+
+Os testes de concorrência de empréstimos e pagamentos de multas usam PostgreSQL
+via Testcontainers e precisam do Docker em execução. Sem Docker, esses testes são
+ignorados; os demais continuam usando o H2 em memória.
+O workflow do GitHub Actions executa `./mvnw test` em um runner com Docker para
+incluir também os testes PostgreSQL e falha caso esses testes sejam ignorados.
 
 ## Como a lógica funciona
 
@@ -151,7 +160,16 @@ O cadastro retorna `201 Created`. O pagamento não pode ter valor nulo ou não p
 
 ## Banco de dados
 
-O projeto usa H2 em memória. Os dados são perdidos quando a aplicação é encerrada. Durante a execução, o console do H2 está disponível em `http://localhost:8080/h2-console`, com JDBC URL `jdbc:h2:mem:cadastro`, usuário `sa` e senha vazia.
+O projeto usa H2 em memória por padrão. Os dados são perdidos quando a aplicação
+é encerrada. Durante a execução, o console do H2 está disponível em
+`http://localhost:8080/h2-console`, com JDBC URL `jdbc:h2:mem:cadastro`, usuário
+`sa` e senha vazia.
+
+O esquema é criado e versionado pelo Flyway em `src/main/resources/db/migration`.
+Para alterar o banco, adicione uma nova migração versionada (por exemplo,
+`V2__descricao_da_alteracao.sql`); não edite uma migração que já tenha sido
+aplicada. O Hibernate usa `ddl-auto=validate` para verificar se as entidades
+correspondem ao esquema, sem modificá-lo automaticamente.
 
 ## Erros da API
 

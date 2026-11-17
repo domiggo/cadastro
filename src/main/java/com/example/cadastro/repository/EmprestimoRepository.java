@@ -3,7 +3,9 @@ package com.example.cadastro.repository;
 
 import com.example.cadastro.entities.Emprestimo;
 import com.example.cadastro.entities.SituacaoEmprestimo;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 
@@ -24,6 +26,8 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
     boolean existsByUsuarioIdAndSituacao(Long usuarioId, SituacaoEmprestimo situacao);
 
     boolean existsByExemplarIdAndSituacao(Long exemplarId, SituacaoEmprestimo situacao);
+
+    long countByExemplarIdAndSituacao(Long exemplarId, SituacaoEmprestimo situacao);
 
     @Query("""
 
@@ -58,4 +62,8 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, Long> {
             @Param("situacao") SituacaoEmprestimo situacao,
             @Param("dataReferencia")LocalDate dataReferencia
             );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("Select e from Emprestimo e where e.id = :id")
+    Optional<Emprestimo> buscarPorIdComBloqueio(@Param("id") Long id);
 }

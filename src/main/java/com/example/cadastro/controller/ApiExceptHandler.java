@@ -1,6 +1,7 @@
 package com.example.cadastro.controller;
 
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -44,5 +45,13 @@ public class ApiExceptHandler {
 
         return ResponseEntity.badRequest()
                 .body(Map.of("erro", mensagem));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> violacaoDeIntegridade(
+            DataIntegrityViolationException ex
+    ) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("erro", "Conflito com dados já cadastrados."));
     }
 }

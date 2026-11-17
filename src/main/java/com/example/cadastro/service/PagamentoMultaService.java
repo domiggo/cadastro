@@ -45,8 +45,10 @@ public class PagamentoMultaService {
 
     @Transactional
     public PagamentoMulta registrarPagamento(Long emprestimoId, BigDecimal valorPago, LocalDate dataDePagamento) {
-        Emprestimo emprestimo = emprestimoRepository.findById(emprestimoId)
-                .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado."));
+        Emprestimo emprestimo = emprestimoRepository
+                .buscarPorIdComBloqueio((emprestimoId))
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Empréstimo não encontrado"));
 
 
         if (dataDePagamento == null) {
@@ -74,7 +76,8 @@ public class PagamentoMultaService {
             throw new IllegalArgumentException("O valor do pagamento deve ter no máximo duas casas decimais.");
         }
 
-        BigDecimal saldoAtual = saldoDaMulta(emprestimoId);
+        BigDecimal totalPago = pagamentoMultaRepository.somarPorEmprestimoId(emprestimoId);
+        BigDecimal saldoAtual = emprestimo.getMulta().subtract(totalPago);
 
         if (saldoAtual.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalStateException("Não há multa pendente para este empréstimo.");

@@ -74,7 +74,7 @@ class PagamentoMultaServiceTest {
 
     @Test
     void deveFalharQuandoEmprestimoNaoExistir() {
-        when(emprestimoRepository.findById(emprestimoId))
+        when(emprestimoRepository.buscarPorIdComBloqueio(emprestimoId))
                 .thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () ->
@@ -210,7 +210,7 @@ class PagamentoMultaServiceTest {
     }
 
     private void configurarCenario() {
-        when(emprestimoRepository.findById(emprestimoId))
+        when(emprestimoRepository.buscarPorIdComBloqueio(emprestimoId))
                 .thenReturn(Optional.of(emprestimo));
     }
 

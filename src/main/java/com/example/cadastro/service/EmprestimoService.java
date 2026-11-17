@@ -73,7 +73,7 @@ public class EmprestimoService {
 
     @Transactional
     public Emprestimo emprestar(Long exemplarId, Long usuarioId) {
-        Exemplar exemplar = exemplarRepository.findById(exemplarId)
+        Exemplar exemplar = exemplarRepository.buscarPorIdComBloqueio(exemplarId)
                 .orElseThrow(() -> new EntityNotFoundException("Exemplar não encontrado"));
 
         if(!exemplar.isAtivo() || !exemplar.getLivro().isAtivo()) {
@@ -100,7 +100,7 @@ public class EmprestimoService {
 
     @Transactional
     public Emprestimo renovar(Long emprestimoId) {
-        Emprestimo emprestimoAtual = emprestimoRepository.findById(emprestimoId)
+        Emprestimo emprestimoAtual = emprestimoRepository.buscarPorIdComBloqueio(emprestimoId)
                 .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado"));
 
         if (!emprestimoAtual.getUsuario().isAtivo()) {
@@ -124,7 +124,7 @@ public class EmprestimoService {
 
     @Transactional
     public Emprestimo devolver(Long emprestimoId) {
-        Emprestimo emprestimo = emprestimoRepository.findById(emprestimoId)
+        Emprestimo emprestimo = emprestimoRepository.buscarPorIdComBloqueio(emprestimoId)
                 .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado"));
 
         emprestimo.registrarDevolucao(LocalDate.now());

@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+
+      - name: Run tests
+        run: ./mvnw --batch-mode --no-transfer-progress test
+
+      - name: Verify PostgreSQL concurrency tests ran
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          reports = (
+              "TEST-com.example.cadastro.service.EmprestimoConcorrenciaTest.xml",
+              "TEST-com.example.cadastro.service.PagamentoMultaConcorrenciaTest.xml",
+          )
+
+          for report_name in reports:
+              report_path = Path("target/surefire-reports") / report_name
+              if not report_path.is_file():
+                  raise SystemExit(f"Missing test report: {report_path}")
+
+              suite = ET.parse(report_path).getroot()
+              tests = int(suite.get("tests", "0"))
+              skipped = int(suite.get("skipped", "0"))
+              failures = int(suite.get("failures", "0"))
+              errors = int(suite.get("errors", "0"))
+
+              if tests == 0 or skipped > 0 or failures > 0 or errors > 0:
+                  raise SystemExit(
+                      f"{report_name}: tests={tests}, skipped={skipped}, "
+                      f"failures={failures}, errors={errors}"
+                  )
+
+              print(f"{report_name}: {tests} PostgreSQL tests passed.")
+          PY
