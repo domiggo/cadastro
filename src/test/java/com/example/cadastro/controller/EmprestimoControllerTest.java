@@ -13,17 +13,20 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Transactional
 class EmprestimoControllerTest {
 
     @Autowired
@@ -68,17 +71,60 @@ class EmprestimoControllerTest {
         emprestimo.iniciar(exemplar, usuario, LocalDate.now());
         emprestimo = emprestimoRepository.save(emprestimo);
 
-        String corpo = mockMvc.perform(get("/emprestimos/ativos"))
+        mockMvc.perform(get("/emprestimos/ativos"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith("application/json"))
-                .andReturn().getResponse().getContentAsString();
+                .andExpect(jsonPath(
+                        "$[?(@.id == " + emprestimo.getId() + ")].usuario.nome"
+                ).value(nomeUsuario))
+                .andExpect(jsonPath(
+                        "$[?(@.id == " + emprestimo.getId() + ")].exemplar.livro.nome"
+                ).value(nomeLivro))
+                .andExpect(jsonPath(
+                        "$[?(@.id == " + emprestimo.getId() + ")].exemplar.codigoPatrimonio"
+                ).value("TESTE-" + sufixo));
+    }
 
-        assertTrue(corpo.contains("\"usuario\":{"));
-        assertTrue(corpo.contains("\"nome\":\"" + nomeUsuario + "\""));
-        assertTrue(corpo.contains("\"exemplar\":{"));
-        assertTrue(corpo.contains("\"livro\":{"));
-        assertTrue(corpo.contains("\"nome\":\"" + nomeLivro + "\""));
-        assertTrue(corpo.contains("\"codigoPatrimonio\":\"TESTE-" + sufixo + "\""));
-        assertTrue(corpo.contains("\"id\":" + emprestimo.getId()));
+    @Test
+    void deveRetornar404QuandoUsuarioNaoExisteAoConsultarAtrasados() throws Exception {
+        long usuarioId = 999_999_999L;
+
+        mockMvc.perform(get("/emprestimos/usuario/{usuarioId}/atrasados", usuarioId))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.erro").value("Usuário não encontrado"));
+    }
+
+    @Test
+    void deveRetornar409QuandoExemplarJaEstaEmprestado() throws Exception {
+        String sufixo = Long.toString(
+                ThreadLocalRandom.current().nextLong(10_000_000_000L, 100_000_000_000L)
+        );
+
+        Usuario usuario = new Usuario();
+        usuario.setNome("Bruno " + sufixo);
+        usuario.setEmail("bruno-" + sufixo + "@example.com");
+        usuario.setCpf(sufixo);
+        usuario = usuarioRepository.save(usuario);
+
+        LivrosModel livro = new LivrosModel();
+        livro.setNome("Fundação " + sufixo);
+        livro = livrosRepository.save(livro);
+
+        Exemplar exemplar = new Exemplar();
+        exemplar.setLivro(livro);
+        exemplar.setCodigoPatrimonio("CONFLITO-" + sufixo);
+        exemplar = exemplarRepository.save(exemplar);
+
+        Emprestimo emprestimo = new Emprestimo();
+        emprestimo.iniciar(exemplar, usuario, LocalDate.now());
+        emprestimoRepository.save(emprestimo);
+
+        mockMvc.perform(post("/emprestimos")
+                        .param("exemplarId", exemplar.getId().toString())
+                        .param("usuarioId", usuario.getId().toString()))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.erro").value("Este exemplar já está emprestado"));
     }
 }

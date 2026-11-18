@@ -5,6 +5,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -45,6 +46,14 @@ public class ApiExceptHandler {
 
         return ResponseEntity.badRequest()
                 .body(Map.of("erro", mensagem));
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, String>> parametroObrigatorioAusente(
+            MissingServletRequestParameterException ex
+    ) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("erro", "Parâmetro obrigatório ausente: " + ex.getParameterName()));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

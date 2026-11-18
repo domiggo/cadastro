@@ -79,7 +79,10 @@ class PagamentoMultaControllerTest {
     void deveRetornar400QuandoDataDePagamentoNaoForInformada() throws Exception {
         mockMvc.perform(post("/emprestimos/1/pagamentos")
                         .param("valorPago", "1.00"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value(
+                        "Parâmetro obrigatório ausente: dataDePagamento"
+                ));
 
         verifyNoInteractions(pagamentoMultaService);
     }
@@ -98,7 +101,10 @@ class PagamentoMultaControllerTest {
     void deveRetornar400QuandoValorPagoNaoForInformado() throws Exception {
         mockMvc.perform(post("/emprestimos/1/pagamentos")
                         .param("dataDePagamento", "2026-11-03"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value(
+                        "Parâmetro obrigatório ausente: valorPago"
+                ));
 
         verifyNoInteractions(pagamentoMultaService);
     }

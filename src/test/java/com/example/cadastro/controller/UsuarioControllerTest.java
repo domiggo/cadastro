@@ -12,6 +12,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,6 +29,25 @@ class UsuarioControllerTest {
 
     @MockitoBean
     private PagamentoMultaService pagamentoMultaService;
+
+    @Test
+    void deveRetornar400QuandoCpfForInvalido() throws Exception {
+        mockMvc.perform(post("/usuarios")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nome": "Ana Silva",
+                                  "email": "ana@example.com",
+                                  "cpf": "123"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value(
+                        "O CPF deve conter exatamente 11 dígitos"
+                ));
+
+        verifyNoInteractions(usuarioService);
+    }
 
     @Test
     void deveRetornar409QuandoBancoRejeitarCadastro() throws Exception {
