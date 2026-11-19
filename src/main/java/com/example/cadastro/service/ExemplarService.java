@@ -87,7 +87,7 @@ public class ExemplarService {
 
     @Transactional
     public boolean desativar(Long livroId, Long exemplarId) {
-        Exemplar exemplar = exemplarRepository.findById(exemplarId)
+        Exemplar exemplar = exemplarRepository.buscarPorIdComBloqueio(exemplarId)
                 .orElse(null);
 
         if (exemplar == null) {

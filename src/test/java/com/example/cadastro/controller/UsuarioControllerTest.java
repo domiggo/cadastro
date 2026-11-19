@@ -12,8 +12,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,5 +68,43 @@ class UsuarioControllerTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.erro").exists());
+    }
+
+    @Test
+    void deveAceitarCpfNoCadastroSemRetornaLoNaResposta() throws Exception {
+        when(usuarioService.criar(any(Usuario.class)))
+                .thenAnswer(invocacao -> invocacao.getArgument(0));
+
+        mockMvc.perform(post("/usuarios")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nome": "Ana Silva",
+                                  "email": "ana@example.com",
+                                  "cpf": "12345678900"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.nome").value("Ana Silva"))
+                .andExpect(jsonPath("$.cpf").doesNotExist());
+
+        verify(usuarioService).criar(argThat(usuario ->
+                "12345678900".equals(usuario.getCpf())
+        ));
+    }
+
+    @Test
+    void naoDeveRetornarCpfAoConsultarUsuario() throws Exception {
+        Usuario usuario = new Usuario();
+        usuario.setId(1L);
+        usuario.setNome("Ana Silva");
+        usuario.setEmail("ana@example.com");
+        usuario.setCpf("12345678900");
+        when(usuarioService.buscarPorId(1L)).thenReturn(java.util.Optional.of(usuario));
+
+        mockMvc.perform(get("/usuarios/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("Ana Silva"))
+                .andExpect(jsonPath("$.cpf").doesNotExist());
     }
 }

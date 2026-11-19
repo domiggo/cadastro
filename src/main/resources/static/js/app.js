@@ -239,7 +239,7 @@ async function editarUsuario(id) {
         campoEditarId.value = usuario.id;
         campoEditarNome.value = usuario.nome;
         campoEditarEmail.value = usuario.email;
-        campoEditarCpf.value = usuario.cpf;
+        campoEditarCpf.value = "";
         formEditar.hidden = false;
     } catch (erro) {
         mostrarMensagem(`Falha ao buscar usuário: ${erro.message}`);

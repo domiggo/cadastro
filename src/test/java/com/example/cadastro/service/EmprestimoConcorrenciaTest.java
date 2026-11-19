@@ -49,6 +49,9 @@ class EmprestimoConcorrenciaTest {
     private EmprestimoService emprestimoService;
 
     @Autowired
+    private ExemplarService exemplarService;
+
+    @Autowired
     private EmprestimoRepository emprestimoRepository;
 
     @Autowired
@@ -99,6 +102,49 @@ class EmprestimoConcorrenciaTest {
             );
         } finally {
             executor.shutdownNow();
+        }
+    }
+
+    @Test
+    void deveSerializarEmprestimoEDesativacaoConcorrentes() throws Exception {
+        String sufixo = UUID.randomUUID().toString();
+        Usuario usuario = criarUsuario("emprestimo-desativacao-" + sufixo);
+
+        LivrosModel livro = new LivrosModel();
+        livro.setNome("Livro para disputa de empréstimo e desativação " + sufixo);
+        livro = livrosRepository.save(livro);
+
+        Exemplar exemplar = new Exemplar();
+        exemplar.setLivro(livro);
+        exemplar.setCodigoPatrimonio("EMPRESTIMO-DESATIVACAO-" + sufixo);
+        exemplar = exemplarRepository.save(exemplar);
+
+        Long livroId = livro.getId();
+        Long exemplarId = exemplar.getId();
+        CountDownLatch inicio = new CountDownLatch(1);
+
+        try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+            Future<Boolean> emprestimo = executor.submit(
+                    tentarEmprestar(inicio, exemplarId, usuario.getId())
+            );
+            Future<Boolean> desativacao = executor.submit(
+                    tentarDesativar(inicio, livroId, exemplarId)
+            );
+            inicio.countDown();
+
+            boolean emprestimoCriado = emprestimo.get();
+            boolean desativacaoAceita = desativacao.get();
+            assertEquals(1, (emprestimoCriado ? 1 : 0) + (desativacaoAceita ? 1 : 0));
+
+            Exemplar exemplarFinal = exemplarRepository.findById(exemplarId)
+                    .orElseThrow();
+            long emprestimosAtivos = emprestimoRepository.countByExemplarIdAndSituacao(
+                    exemplarId,
+                    SituacaoEmprestimo.ATIVO
+            );
+
+            assertEquals(emprestimoCriado, exemplarFinal.isAtivo());
+            assertEquals(emprestimoCriado ? 1L : 0L, emprestimosAtivos);
         }
     }
 
@@ -207,6 +253,21 @@ class EmprestimoConcorrenciaTest {
                 emprestimoService.emprestar(exemplarId, usuarioId);
                 return true;
             } catch (IllegalStateException exemplarJaEmprestado) {
+                return false;
+            }
+        };
+    }
+
+    private Callable<Boolean> tentarDesativar(
+            CountDownLatch inicio,
+            Long livroId,
+            Long exemplarId
+    ) {
+        return () -> {
+            inicio.await();
+            try {
+                return exemplarService.desativar(livroId, exemplarId);
+            } catch (IllegalStateException exemplarEmprestado) {
                 return false;
             }
         };

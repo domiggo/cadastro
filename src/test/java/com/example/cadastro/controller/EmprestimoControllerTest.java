@@ -78,6 +78,9 @@ class EmprestimoControllerTest {
                         "$[?(@.id == " + emprestimo.getId() + ")].usuario.nome"
                 ).value(nomeUsuario))
                 .andExpect(jsonPath(
+                        "$[?(@.id == " + emprestimo.getId() + ")].usuario.cpf"
+                ).doesNotExist())
+                .andExpect(jsonPath(
                         "$[?(@.id == " + emprestimo.getId() + ")].exemplar.livro.nome"
                 ).value(nomeLivro))
                 .andExpect(jsonPath(

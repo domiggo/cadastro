@@ -1,5 +1,6 @@
 package com.example.cadastro.entities;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -29,6 +30,7 @@ public class Usuario {
     @NotBlank(message = "O cpf é obrigatório")
     @Column(nullable = false, unique = true)
     @Pattern(regexp = "\\d{11}", message = "O CPF deve conter exatamente 11 dígitos")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String cpf;
 
     @Column(nullable = false)

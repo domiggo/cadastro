@@ -72,6 +72,9 @@ Todos os endpoints usam JSON, exceto os parâmetros indicados na URL.
 | `GET` | `/usuarios/{usuarioId}/multas/saldo-pendente` | Consulta o saldo de multas pendentes do usuário |
 | `GET` | `/usuarios/{usuarioId}/pagamentos` | Lista pagamentos de multa do usuário |
 
+O CPF é recebido no cadastro e na atualização, mas não é incluído nas respostas
+JSON. Ao editar pela interface, informe o CPF novamente.
+
 Exemplo de cadastro:
 
 ```json
@@ -161,9 +164,16 @@ O cadastro retorna `201 Created`. O pagamento não pode ter valor nulo ou não p
 ## Banco de dados
 
 O projeto usa H2 em memória por padrão. Os dados são perdidos quando a aplicação
-é encerrada. Durante a execução, o console do H2 está disponível em
-`http://localhost:8080/h2-console`, com JDBC URL `jdbc:h2:mem:cadastro`, usuário
-`sa` e senha vazia.
+é encerrada. O console do H2 fica desabilitado por padrão. Para habilitá-lo
+somente em um ambiente local de desenvolvimento, inicie a aplicação com:
+
+```bash
+SPRING_H2_CONSOLE_ENABLED=true ./mvnw spring-boot:run
+```
+
+Nesse modo, o console fica disponível em `http://localhost:8080/h2-console`,
+com JDBC URL `jdbc:h2:mem:cadastro`, usuário `sa` e senha vazia. Não habilite o
+console em ambientes acessíveis por outras pessoas ou em produção.
 
 O esquema é criado e versionado pelo Flyway em `src/main/resources/db/migration`.
 Para alterar o banco, adicione uma nova migração versionada (por exemplo,
