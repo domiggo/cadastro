@@ -34,4 +34,5 @@ public interface LivrosRepository
 
     List<LivrosModel> findByAtivoTrue();
     List<LivrosModel> findByAtivoFalse();
+    long countByAtivoTrue();
 }

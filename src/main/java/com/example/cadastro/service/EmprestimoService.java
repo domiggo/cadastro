@@ -8,6 +8,8 @@ import com.example.cadastro.repository.EmprestimoRepository;
 import com.example.cadastro.repository.ExemplarRepository;
 import com.example.cadastro.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,8 +40,35 @@ public class EmprestimoService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Emprestimo> buscarHistorico(
+            Long usuarioId,
+            SituacaoEmprestimo situacao,
+            Pageable pageable
+    ) {
+        if (usuarioId != null && situacao != null) {
+            return emprestimoRepository.findByUsuarioIdAndSituacao(
+                    usuarioId,
+                    situacao,
+                    pageable
+            );
+        }
+        if (usuarioId != null) {
+            return emprestimoRepository.findByUsuarioId(usuarioId, pageable);
+        }
+        if (situacao != null) {
+            return emprestimoRepository.findBySituacao(situacao, pageable);
+        }
+        return emprestimoRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
     public List<Emprestimo> listarAtivos() {
         return emprestimoRepository.findBySituacao(SituacaoEmprestimo.ATIVO);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Emprestimo> buscarAtivos(Pageable pageable) {
+        return emprestimoRepository.findBySituacao(SituacaoEmprestimo.ATIVO, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -50,12 +79,30 @@ public class EmprestimoService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Emprestimo> buscarAtrasados(Pageable pageable) {
+        return emprestimoRepository.findBySituacaoAndDataPrevistaDevolucaoBefore(
+                SituacaoEmprestimo.ATIVO,
+                LocalDate.now(),
+                pageable
+        );
+    }
+
+    @Transactional(readOnly = true)
     public List<Emprestimo> listarPorUsuario(Long usuarioId) {
         if (!usuarioRepository.existsById(usuarioId)) {
             throw new EntityNotFoundException("Usuário não encontrado");
         }
 
         return emprestimoRepository.findByUsuarioId(usuarioId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Emprestimo> buscarPorUsuario(Long usuarioId, Pageable pageable) {
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new EntityNotFoundException("Usuário não encontrado");
+        }
+
+        return emprestimoRepository.findByUsuarioId(usuarioId, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -71,12 +118,29 @@ public class EmprestimoService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public Page<Emprestimo> buscarEmprestimosAtrasadosPorUsuario(
+            Long usuarioId,
+            Pageable pageable
+    ) {
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new EntityNotFoundException("Usuário não encontrado");
+        }
+
+        return emprestimoRepository.findByUsuarioIdAndSituacaoAndDataPrevistaDevolucaoBefore(
+                usuarioId,
+                SituacaoEmprestimo.ATIVO,
+                LocalDate.now(),
+                pageable
+        );
+    }
+
     @Transactional
     public Emprestimo emprestar(Long exemplarId, Long usuarioId) {
         Exemplar exemplar = exemplarRepository.buscarPorIdComBloqueio(exemplarId)
                 .orElseThrow(() -> new EntityNotFoundException("Exemplar não encontrado"));
 
-        if(!exemplar.isAtivo() || !exemplar.getLivro().isAtivo()) {
+        if (!exemplar.isAtivo() || !exemplar.getLivro().isAtivo()) {
             throw new IllegalStateException("O exemplar ou o título está inativo");
         }
 
@@ -134,14 +198,18 @@ public class EmprestimoService {
 
     @Transactional(readOnly = true)
     public BigDecimal calcularMultaTotalPorUsuario(Long usuarioId) {
-
-        List<Emprestimo> emprestimos = listarPorUsuario(usuarioId);
-        BigDecimal multas = BigDecimal.ZERO;
-
-        for (Emprestimo emprestimo : emprestimos) {
-            multas = multas.add(emprestimo.getMulta());
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new EntityNotFoundException("Usuário não encontrado");
         }
 
-        return multas;
+        LocalDate hoje = LocalDate.now();
+        return emprestimoRepository.buscarDatasMultaPorUsuario(usuarioId).stream()
+                .map(datas -> Emprestimo.calcularMulta(
+                        datas.getDataPrevistaDevolucao(),
+                        datas.getDataDevolucao(),
+                        datas.getDataEncerramento(),
+                        hoje
+                ))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

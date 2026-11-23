@@ -92,6 +92,20 @@ public class Emprestimo {
     }
 
     public long calcularDiasDeAtraso(LocalDate dataReferencia) {
+        return calcularDiasDeAtraso(
+                dataPrevistaDevolucao,
+                dataDevolucao,
+                dataEncerramento,
+                dataReferencia
+        );
+    }
+
+    public static long calcularDiasDeAtraso(
+            LocalDate dataPrevistaDevolucao,
+            LocalDate dataDevolucao,
+            LocalDate dataEncerramento,
+            LocalDate dataReferencia
+    ) {
         LocalDate dataFinal;
 
         if (dataDevolucao != null) {
@@ -112,6 +126,21 @@ public class Emprestimo {
     public BigDecimal calcularMulta(LocalDate dataReferencia) {
         long diasAtrasado = calcularDiasDeAtraso(dataReferencia);
 
+        return MULTA_POR_DIA.multiply(BigDecimal.valueOf(diasAtrasado));
+    }
+
+    public static BigDecimal calcularMulta(
+            LocalDate dataPrevistaDevolucao,
+            LocalDate dataDevolucao,
+            LocalDate dataEncerramento,
+            LocalDate dataReferencia
+    ) {
+        long diasAtrasado = calcularDiasDeAtraso(
+                dataPrevistaDevolucao,
+                dataDevolucao,
+                dataEncerramento,
+                dataReferencia
+        );
         return MULTA_POR_DIA.multiply(BigDecimal.valueOf(diasAtrasado));
     }
 

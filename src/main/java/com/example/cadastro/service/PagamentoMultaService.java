@@ -1,18 +1,26 @@
 package com.example.cadastro.service;
 
+import com.example.cadastro.dto.ResumoMultasUsuario;
+import com.example.cadastro.dto.PagamentoMultaResumo;
 import com.example.cadastro.entities.Emprestimo;
 import com.example.cadastro.entities.PagamentoMulta;
 import com.example.cadastro.repository.EmprestimoRepository;
 import com.example.cadastro.repository.PagamentoMultaRepository;
+import com.example.cadastro.repository.TotalPagoPorEmprestimo;
 import com.example.cadastro.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.AllArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -25,7 +33,7 @@ public class PagamentoMultaService {
 
     @Transactional(readOnly = true)
     public List<PagamentoMulta> listarPagamentosPorEmprestimo(Long emprestimoId) {
-        if(!emprestimoRepository.existsById(emprestimoId)) {
+        if (!emprestimoRepository.existsById(emprestimoId)) {
             throw new EntityNotFoundException("Empréstimo não encontrado");
         }
 
@@ -34,13 +42,13 @@ public class PagamentoMultaService {
 
     @Transactional(readOnly = true)
     public BigDecimal saldoDaMulta(Long emprestimoId) {
-         Emprestimo emprestimo = emprestimoRepository.findById(emprestimoId)
-                 .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado"));
+        Emprestimo emprestimo = emprestimoRepository.findById(emprestimoId)
+                .orElseThrow(() -> new EntityNotFoundException("Empréstimo não encontrado"));
 
-         BigDecimal multaTotal = emprestimo.getMulta();
-         BigDecimal valorPago = pagamentoMultaRepository.somarPorEmprestimoId(emprestimoId);
+        BigDecimal multaTotal = emprestimo.getMulta();
+        BigDecimal valorPago = pagamentoMultaRepository.somarPorEmprestimoId(emprestimoId);
 
-         return multaTotal.subtract(valorPago);
+        return multaTotal.subtract(valorPago);
     }
 
     @Transactional
@@ -63,7 +71,7 @@ public class PagamentoMultaService {
             throw new IllegalArgumentException("A data de pagamento não pode ser futura.");
         }
 
-        if (valorPago == null){
+        if (valorPago == null) {
             throw new IllegalArgumentException("É necessário um valor inicial para realizar o pagamento.");
         }
 
@@ -98,24 +106,44 @@ public class PagamentoMultaService {
 
     @Transactional(readOnly = true)
     public BigDecimal calcularSaldoMultasPendentesPorUsuario(Long usuarioId) {
+        return consultarResumoMultasPendentesPorUsuario(usuarioId).saldoTotal();
+    }
+
+    @Transactional(readOnly = true)
+    public ResumoMultasUsuario consultarResumoMultasPendentesPorUsuario(Long usuarioId) {
         if (!usuarioRepository.existsById(usuarioId)) {
             throw new EntityNotFoundException("Usuário não encontrado.");
         }
 
-        List<Emprestimo> emprestimos = emprestimoRepository.findByUsuarioId(usuarioId);
-        BigDecimal saldoMultas = BigDecimal.ZERO;
-
-        for (Emprestimo emprestimo : emprestimos) {
-           BigDecimal valorPagoNoEmprestimo =
-                   pagamentoMultaRepository.somarPorEmprestimoId(emprestimo.getId());
-
-           BigDecimal saldoEmprestimo =
-           emprestimo.getMulta().subtract(valorPagoNoEmprestimo);
-
-           saldoMultas = saldoMultas.add(saldoEmprestimo);
+        List<Emprestimo> emprestimos =
+                emprestimoRepository.buscarComDadosParaMultasPorUsuario(usuarioId);
+        if (emprestimos.isEmpty()) {
+            return new ResumoMultasUsuario(BigDecimal.ZERO, List.of());
         }
 
-        return saldoMultas;
+        Map<Long, BigDecimal> totaisPagos = pagamentoMultaRepository
+                .somarPorUsuarioAgrupadoPorEmprestimo(usuarioId)
+                .stream()
+                .collect(Collectors.toMap(
+                        TotalPagoPorEmprestimo::getEmprestimoId,
+                        TotalPagoPorEmprestimo::getTotalPago
+                ));
+
+        List<ResumoMultasUsuario.SaldoMultaEmprestimo> saldos = emprestimos.stream()
+                .map(emprestimo -> new ResumoMultasUsuario.SaldoMultaEmprestimo(
+                        emprestimo.getId(),
+                        emprestimo.getExemplar().getLivro().getNome(),
+                        emprestimo.getExemplar().getCodigoPatrimonio(),
+                        emprestimo.getMulta().subtract(
+                                totaisPagos.getOrDefault(emprestimo.getId(), BigDecimal.ZERO)
+                        )
+                ))
+                .toList();
+        BigDecimal saldoTotal = saldos.stream()
+                .map(ResumoMultasUsuario.SaldoMultaEmprestimo::saldo)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new ResumoMultasUsuario(saldoTotal, saldos);
     }
 
     @Transactional(readOnly = true)
@@ -125,5 +153,17 @@ public class PagamentoMultaService {
         }
 
         return pagamentoMultaRepository.findByEmprestimoUsuarioIdOrderByDataPagamentoAsc(usuarioId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PagamentoMultaResumo> listarResumoPagamentosPorUsuario(
+            Long usuarioId,
+            Pageable pageable
+    ) {
+        if (!usuarioRepository.existsById(usuarioId)) {
+            throw new EntityNotFoundException("Usuário não encontrado.");
+        }
+
+        return pagamentoMultaRepository.buscarResumoPorUsuario(usuarioId, pageable);
     }
 }

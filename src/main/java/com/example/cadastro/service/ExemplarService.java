@@ -1,5 +1,6 @@
 package com.example.cadastro.service;
 
+import com.example.cadastro.dto.ExemplarResumo;
 import com.example.cadastro.entities.Exemplar;
 import com.example.cadastro.entities.LivrosModel;
 import com.example.cadastro.entities.SituacaoEmprestimo;
@@ -22,8 +23,7 @@ public class ExemplarService {
     public ExemplarService(
             ExemplarRepository exemplarRepository,
             LivrosRepository livrosRepository,
-            EmprestimoRepository emprestimoRepository)
-    {
+            EmprestimoRepository emprestimoRepository) {
         this.exemplarRepository = exemplarRepository;
         this.livrosRepository = livrosRepository;
         this.emprestimoRepository = emprestimoRepository;
@@ -80,6 +80,23 @@ public class ExemplarService {
         }
 
         return exemplarRepository.findDisponiveisPorLivro(
+                livroId,
+                SituacaoEmprestimo.ATIVO
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExemplarResumo> listarTodosDisponiveis() {
+        return exemplarRepository.findTodosDisponiveis(SituacaoEmprestimo.ATIVO);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ExemplarResumo> listarResumoAtivosPorLivro(Long livroId) {
+        if (!livrosRepository.existsById(livroId)) {
+            throw new EntityNotFoundException("Livro não encontrado");
+        }
+
+        return exemplarRepository.findResumoAtivosPorLivro(
                 livroId,
                 SituacaoEmprestimo.ATIVO
         );

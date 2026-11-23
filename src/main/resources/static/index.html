@@ -13,6 +13,7 @@
     </header>
 
     <nav aria-label="Navegação principal">
+        <button type="button" class="ativo" aria-current="page">Visão geral</button>
         <button type="button">Usuários</button>
         <button type="button">Livros e exemplares</button>
         <button type="button">Empréstimos</button>
@@ -20,8 +21,48 @@
     </nav>
 
     <main id="conteudo-principal" tabindex="-1">
-        <h2>Bem-vindo</h2>
-        <p>Escolha uma seção para começar.</p>
+        <h2>Visão geral</h2>
+        <p>Acompanhe os principais indicadores e acesse rapidamente cada fluxo.</p>
+        <section id="secao-visao-geral">
+            <h3>Visão geral da biblioteca</h3>
+            <p id="mensagem-visao-geral" role="status" aria-live="polite" hidden></p>
+
+            <div
+                class="resumo-biblioteca"
+                role="group"
+                aria-label="Indicadores da biblioteca"
+            >
+                <article class="cartao-resumo">
+                    <span class="rotulo-resumo">Usuários ativos</span>
+                    <strong id="resumo-usuarios">—</strong>
+                </article>
+                <article class="cartao-resumo">
+                    <span class="rotulo-resumo">Livros ativos</span>
+                    <strong id="resumo-livros">—</strong>
+                </article>
+                <article class="cartao-resumo">
+                    <span class="rotulo-resumo">Empréstimos ativos</span>
+                    <strong id="resumo-emprestimos">—</strong>
+                </article>
+                <article class="cartao-resumo cartao-resumo-atrasos">
+                    <span class="rotulo-resumo">Empréstimos atrasados</span>
+                    <strong id="resumo-atrasos">—</strong>
+                </article>
+            </div>
+
+            <div class="acoes-rapidas">
+                <h3>Acesso rápido</h3>
+                <button type="button" data-secao="Empréstimos">
+                    Registrar empréstimo
+                </button>
+                <button type="button" data-secao="Livros e exemplares">
+                    Cadastrar livro ou exemplar
+                </button>
+                <button type="button" data-secao="Multas e pagamentos">
+                    Consultar atrasos e multas
+                </button>
+            </div>
+        </section>
         <section id="secao-usuarios" hidden>
             <h3>Cadastrar usuário</h3>
             <p id="mensagem-form" role="status" aria-live="polite" hidden></p>
@@ -117,6 +158,16 @@
 
             <h3>Empréstimos ativos</h3>
             <ul id="lista-emprestimos"></ul>
+            <div id="paginacao-emprestimos-ativos"
+                 aria-label="Paginação dos empréstimos ativos" hidden>
+                <button id="pagina-anterior-emprestimos-ativos" type="button" disabled>
+                    Anterior
+                </button>
+                <span id="pagina-atual-emprestimos-ativos" aria-live="polite"></span>
+                <button id="proxima-pagina-emprestimos-ativos" type="button" disabled>
+                    Próxima
+                </button>
+            </div>
 
             <h3>Histórico de empréstimos</h3>
             <button id="botao-historico-emprestimos" type="button">
@@ -139,6 +190,15 @@
                     </select>
                 </div>
             </div>
+            <div class="paginacao-historico" aria-label="Paginação do histórico" hidden>
+                <button id="pagina-anterior-historico" type="button" disabled>
+                    Anterior
+                </button>
+                <span id="pagina-atual-historico" aria-live="polite">Página 1</span>
+                <button id="proxima-pagina-historico" type="button" disabled>
+                    Próxima
+                </button>
+            </div>
             <ul id="lista-historico-emprestimos" hidden></ul>
         </section>
         <section id="secao-multas" hidden>
@@ -147,6 +207,15 @@
 
             <h3>Empréstimos atrasados</h3>
             <ul id="lista-emprestimos-atrasados"></ul>
+            <div id="paginacao-atrasados" aria-label="Paginação dos empréstimos atrasados" hidden>
+                <button id="pagina-anterior-atrasados" type="button" disabled>
+                    Anterior
+                </button>
+                <span id="pagina-atual-atrasados" aria-live="polite"></span>
+                <button id="proxima-pagina-atrasados" type="button" disabled>
+                    Próxima
+                </button>
+            </div>
 
             <label for="usuario-multas">Usuário</label>
             <select id="usuario-multas" required></select>
@@ -158,6 +227,15 @@
 
             <h3>Pagamentos registrados</h3>
             <ul id="lista-pagamentos"></ul>
+            <div id="paginacao-pagamentos" aria-label="Paginação dos pagamentos" hidden>
+                <button id="pagina-anterior-pagamentos" type="button" disabled>
+                    Anterior
+                </button>
+                <span id="pagina-atual-pagamentos" aria-live="polite"></span>
+                <button id="proxima-pagina-pagamentos" type="button" disabled>
+                    Próxima
+                </button>
+            </div>
         </section>
     </main>
 <script src="/js/app.js" type="module"></script>

@@ -18,6 +18,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,6 +69,54 @@ class UsuarioControllerTest {
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.erro").exists());
+    }
+
+    @Test
+    void deveRetornarErroPadronizadoQuandoJsonForInvalido() throws Exception {
+        mockMvc.perform(post("/usuarios")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro").value(
+                        "Corpo da requisição inválido."
+                ));
+
+        verifyNoInteractions(usuarioService);
+    }
+
+    @Test
+    void deveRetornar404PadronizadoQuandoRotaNaoExistir() throws Exception {
+        mockMvc.perform(get("/rota-inexistente"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.erro").value("Rota não encontrada."));
+    }
+
+    @Test
+    void deveRetornar405PadronizadoQuandoMetodoNaoForSuportado() throws Exception {
+        mockMvc.perform(put("/usuarios"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.erro").value("Método HTTP não permitido."));
+
+        verifyNoInteractions(usuarioService);
+    }
+
+    @Test
+    void deveRetornar415PadronizadoQuandoTipoDeConteudoNaoForSuportado() throws Exception {
+        mockMvc.perform(post("/usuarios")
+                        .contentType(MediaType.TEXT_PLAIN)
+                        .content("""
+                                {
+                                  "nome": "Ana Silva",
+                                  "email": "ana@example.com",
+                                  "cpf": "12345678900"
+                                }
+                                """))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.erro").value(
+                        "Tipo de conteúdo não suportado."
+                ));
+
+        verifyNoInteractions(usuarioService);
     }
 
     @Test

@@ -92,7 +92,11 @@ class PagamentoMultaControllerTest {
         mockMvc.perform(post("/emprestimos/1/pagamentos")
                         .param("valorPago", "1.00")
                         .param("dataDePagamento", "03/11/2026"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.erro").value(
+                        "Parâmetro inválido: dataDePagamento"
+                ));
 
         verifyNoInteractions(pagamentoMultaService);
     }

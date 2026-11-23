@@ -12,4 +12,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     List<Usuario> findByAtivoTrue();
     List<Usuario> findByAtivoFalse();
+    long countByAtivoTrue();
 }

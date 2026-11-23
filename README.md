@@ -20,7 +20,10 @@ No Windows, use `mvnw.cmd spring-boot:run`. A API inicia, por padrão, em `http:
 ## Interface web
 
 Ao iniciar a aplicação, a interface estática fica disponível em `http://localhost:8080/`.
-Ela apresenta seções para usuários, livros e exemplares, empréstimos e multas.
+O endpoint `GET /biblioteca/resumo` fornece contagens de usuários e livros ativos,
+empréstimos ativos e empréstimos atrasados. O painel inicial usa esse resumo,
+com atalhos para os fluxos de empréstimos, acervo e multas. A interface também apresenta
+seções para usuários, livros e exemplares, empréstimos e multas.
 
 A seção de usuários permite cadastrar, listar, editar, desativar e reativar usuários.
 A seção de livros e exemplares permite cadastrar livros e exemplares, consultar itens
@@ -70,6 +73,7 @@ Todos os endpoints usam JSON, exceto os parâmetros indicados na URL.
 | `DELETE` | `/usuarios/{id}` | Desativa um usuário |
 | `PATCH` | `/usuarios/{id}/ativacao` | Reativa um usuário |
 | `GET` | `/usuarios/{usuarioId}/multas/saldo-pendente` | Consulta o saldo de multas pendentes do usuário |
+| `GET` | `/usuarios/{usuarioId}/multas/resumo` | Consulta o saldo total e os saldos pendentes por empréstimo |
 | `GET` | `/usuarios/{usuarioId}/pagamentos` | Lista pagamentos de multa do usuário |
 
 O CPF é recebido no cadastro e na atualização, mas não é incluído nas respostas
@@ -113,6 +117,8 @@ Exemplo de cadastro:
 | `GET` | `/livros/{livroId}/exemplares/ativos` | Lista exemplares ativos |
 | `GET` | `/livros/{livroId}/exemplares/inativos` | Lista exemplares desativados |
 | `GET` | `/livros/{livroId}/exemplares/disponiveis` | Lista exemplares disponíveis para empréstimo |
+| `GET` | `/livros/exemplares/disponiveis` | Lista em lote os exemplares disponíveis de todos os livros ativos |
+| `GET` | `/livros/{livroId}/exemplares/resumo` | Lista exemplares ativos com indicador de disponibilidade |
 | `PATCH` | `/livros/{livroId}/exemplares/{exemplarId}/desativacao` | Desativa um exemplar que não esteja emprestado |
 | `PATCH` | `/livros/{livroId}/exemplares/{exemplarId}/ativacao` | Reativa um exemplar |
 
@@ -121,10 +127,15 @@ Exemplo de cadastro:
 | Método | Caminho | Ação |
 |---|---|---|
 | `GET` | `/emprestimos` | Lista todos os empréstimos |
+| `GET` | `/emprestimos/historico?page=0&size=20` | Lista o histórico paginado, ordenado do mais recente para o mais antigo; aceita filtros opcionais `usuarioId` e `situacao` (tamanho máximo: 100) |
 | `GET` | `/emprestimos/ativos` | Lista empréstimos ativos |
+| `GET` | `/emprestimos/ativos/pagina?page=0&size=20` | Lista empréstimos ativos paginados, do mais recente para o mais antigo (tamanho máximo: 100) |
 | `GET` | `/emprestimos/atrasados` | Lista empréstimos ativos em atraso |
+| `GET` | `/emprestimos/atrasados/pagina?page=0&size=20` | Lista empréstimos atrasados paginados por data prevista e ID; tamanho máximo: 100 |
 | `GET` | `/emprestimos/usuario/{usuarioId}` | Lista empréstimos de um usuário |
+| `GET` | `/emprestimos/usuario/{usuarioId}/pagina?page=0&size=20` | Lista empréstimos de um usuário paginados do mais recente para o mais antigo (tamanho máximo: 100) |
 | `GET` | `/emprestimos/usuario/{usuarioId}/atrasados` | Lista empréstimos em atraso de um usuário |
+| `GET` | `/emprestimos/usuario/{usuarioId}/atrasados/pagina?page=0&size=20` | Lista empréstimos em atraso de um usuário paginados por data prevista e ID (tamanho máximo: 100) |
 | `GET` | `/emprestimos/usuario/{usuarioId}/multa-total` | Consulta a multa total calculada para os empréstimos do usuário |
 | `POST` | `/emprestimos?exemplarId={exemplarId}&usuarioId={usuarioId}` | Empresta um exemplar |
 | `POST` | `/emprestimos/{emprestimoId}/devolucao` | Registra a devolução |
@@ -145,6 +156,7 @@ Os pagamentos são associados a um empréstimo. A data deve ser enviada no forma
 | `GET` | `/emprestimos/{emprestimoId}/pagamentos` | Lista pagamentos do empréstimo, ordenados por data |
 | `GET` | `/emprestimos/{emprestimoId}/pagamentos/saldo` | Consulta o saldo da multa do empréstimo |
 | `POST` | `/emprestimos/{emprestimoId}/pagamentos?valorPago={valor}&dataDePagamento={data}` | Registra um pagamento de multa |
+| `GET` | `/usuarios/{usuarioId}/pagamentos/historico?page=0&size=20` | Lista pagamentos do usuário paginados por data e ID; tamanho máximo: 100 |
 
 Exemplo de pagamento de R$ 5,00:
 
@@ -183,4 +195,9 @@ correspondem ao esquema, sem modificá-lo automaticamente.
 
 ## Erros da API
 
-O tratamento centralizado fica em `controller/ApiExceptHandler.java`. Em geral, registros não encontrados retornam `404`, dados ou operações inválidas retornam `400`, e conflitos de estado retornam `409`.
+O tratamento centralizado fica em `controller/ApiExceptHandler.java`. Em geral,
+registros não encontrados retornam `404`, dados ou operações inválidas retornam
+`400`, e conflitos de estado retornam `409`. Erros de requisição usam o formato
+JSON `{"erro":"mensagem"}`, incluindo parâmetros obrigatórios ausentes, parâmetros
+com tipo ou formato inválido, corpos JSON malformados, rotas inexistentes e métodos
+HTTP ou tipos de conteúdo não suportados.

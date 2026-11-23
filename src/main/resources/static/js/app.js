@@ -1,6 +1,8 @@
 const botoesNavegacao = document.querySelectorAll("nav button");
 const titulo = document.querySelector("main h2");
 const descricao = document.querySelector("main p");
+const secaoVisaoGeral = document.querySelector("#secao-visao-geral");
+const mensagemVisaoGeral = document.querySelector("#mensagem-visao-geral");
 const secaoUsuarios = document.querySelector("#secao-usuarios");
 
 const formUsuario = document.querySelector("#form-usuario");
@@ -35,22 +37,56 @@ const formEmprestimo = document.querySelector("#form-emprestimo");
 const campoUsuarioEmprestimo = document.querySelector("#usuario-emprestimo");
 const campoExemplarEmprestimo = document.querySelector("#exemplar-emprestimo");
 const listaEmprestimos = document.querySelector("#lista-emprestimos");
+const paginacaoEmprestimosAtivos = document.querySelector("#paginacao-emprestimos-ativos");
+const paginaAnteriorEmprestimosAtivos =
+    document.querySelector("#pagina-anterior-emprestimos-ativos");
+const proximaPaginaEmprestimosAtivos =
+    document.querySelector("#proxima-pagina-emprestimos-ativos");
+const paginaAtualEmprestimosAtivos =
+    document.querySelector("#pagina-atual-emprestimos-ativos");
 const mensagemEmprestimos = document.querySelector("#mensagem-emprestimos");
 const botaoHistoricoEmprestimos = document.querySelector("#botao-historico-emprestimos");
 const listaHistoricoEmprestimos = document.querySelector("#lista-historico-emprestimos");
+const controlesPaginacaoHistorico = document.querySelector(".paginacao-historico");
 const filtroHistoricoEmprestimos = document.querySelector("#filtro-historico-emprestimos");
 const filtroSituacaoEmprestimos = document.querySelector("#filtro-situacao-emprestimos");
+const botaoPaginaAnteriorHistorico = document.querySelector("#pagina-anterior-historico");
+const botaoProximaPaginaHistorico = document.querySelector("#proxima-pagina-historico");
+const paginaAtualHistorico = document.querySelector("#pagina-atual-historico");
+const TAMANHO_PAGINA_HISTORICO = 20;
+const TAMANHO_PAGINA_EMPRESTIMOS_ATIVOS = 20;
+let paginaEmprestimosAtivos = 0;
+let totalPaginasEmprestimosAtivos = 0;
 let historicoEmprestimos = [];
+let paginaHistorico = 0;
+let totalPaginasHistorico = 0;
+let totalEmprestimosHistorico = 0;
+let filtrosHistoricoCarregados = false;
 
 const secaoMultas = document.querySelector("#secao-multas");
 const campoUsuarioMultas = document.querySelector("#usuario-multas");
 const saldoMultas = document.querySelector("#saldo-multas");
 const listaMultas = document.querySelector("#lista-multas");
 const listaPagamentos = document.querySelector("#lista-pagamentos");
+const paginacaoPagamentos = document.querySelector("#paginacao-pagamentos");
+const paginaAnteriorPagamentos = document.querySelector("#pagina-anterior-pagamentos");
+const proximaPaginaPagamentos = document.querySelector("#proxima-pagina-pagamentos");
+const paginaAtualPagamentos = document.querySelector("#pagina-atual-pagamentos");
+const TAMANHO_PAGINA_PAGAMENTOS = 20;
+let paginaPagamentos = 0;
+let totalPaginasPagamentos = 0;
 const mensagemMultas = document.querySelector("#mensagem-multas");
 const listaEmprestimosAtrasados = document.querySelector("#lista-emprestimos-atrasados");
+const paginacaoAtrasados = document.querySelector("#paginacao-atrasados");
+const paginaAnteriorAtrasados = document.querySelector("#pagina-anterior-atrasados");
+const proximaPaginaAtrasados = document.querySelector("#proxima-pagina-atrasados");
+const paginaAtualAtrasados = document.querySelector("#pagina-atual-atrasados");
+const TAMANHO_PAGINA_ATRASADOS = 20;
+let paginaAtrasados = 0;
+let totalPaginasAtrasados = 0;
 
 const descricoesPorSecao = {
+    "Visão geral": "Acompanhe os principais indicadores e acesse rapidamente cada fluxo.",
     "Usuários": "Aqui você poderá consultar e cadastrar usuários.",
     "Livros e exemplares": "Aqui você poderá consultar livros e exemplares.",
     "Empréstimos": "Aqui você poderá acompanhar os empréstimos.",
@@ -82,6 +118,41 @@ async function mensagemDeErroDaResposta(resposta) {
     }
 }
 
+async function carregarVisaoGeral() {
+    const indicadores = [
+        document.querySelector("#resumo-usuarios"),
+        document.querySelector("#resumo-livros"),
+        document.querySelector("#resumo-emprestimos"),
+        document.querySelector("#resumo-atrasos")
+    ];
+    indicadores.forEach((indicador) => {
+        indicador.textContent = "—";
+    });
+    mensagemVisaoGeral.textContent = "Carregando indicadores...";
+    mensagemVisaoGeral.hidden = false;
+    mensagemVisaoGeral.classList.remove("mensagem-erro", "mensagem-sucesso");
+
+    try {
+        const resposta = await fetch("/biblioteca/resumo");
+        if (!resposta.ok) {
+            throw new Error(await mensagemDeErroDaResposta(resposta));
+        }
+
+        const resumo = await resposta.json();
+
+        indicadores[0].textContent = resumo.usuariosAtivos;
+        indicadores[1].textContent = resumo.livrosAtivos;
+        indicadores[2].textContent = resumo.emprestimosAtivos;
+        indicadores[3].textContent = resumo.emprestimosAtrasados;
+        atualizarMensagemStatus(mensagemVisaoGeral, "Indicadores atualizados.");
+    } catch (erro) {
+        atualizarMensagemStatus(
+            mensagemVisaoGeral,
+            `Falha ao carregar visão geral: ${erro.message}`
+        );
+    }
+}
+
 botoesNavegacao.forEach((botao) => {
     botao.addEventListener("click", () => {
         const nomeSecao = botao.textContent.trim();
@@ -89,13 +160,25 @@ botoesNavegacao.forEach((botao) => {
         titulo.textContent = nomeSecao;
         descricao.textContent = descricoesPorSecao[nomeSecao];
 
-        botoesNavegacao.forEach((item) => item.classList.remove("ativo"));
-        botao.classList.add("ativo");
+        botoesNavegacao.forEach((item) => {
+            const ativo = item === botao;
+            item.classList.toggle("ativo", ativo);
+            if (ativo) {
+                item.setAttribute("aria-current", "page");
+            } else {
+                item.removeAttribute("aria-current");
+            }
+        });
 
+        secaoVisaoGeral.hidden = nomeSecao !== "Visão geral";
         secaoUsuarios.hidden = nomeSecao !== "Usuários";
         secaoLivros.hidden = nomeSecao !== "Livros e exemplares";
         secaoEmprestimos.hidden = nomeSecao !== "Empréstimos";
         secaoMultas.hidden = nomeSecao !== "Multas e pagamentos";
+
+        if (!secaoVisaoGeral.hidden) {
+            carregarVisaoGeral();
+        }
 
         if (!secaoUsuarios.hidden) {
             carregarUsuarios();
@@ -112,6 +195,15 @@ botoesNavegacao.forEach((botao) => {
         if (!secaoMultas.hidden) {
             carregarUsuariosParaMultas();
         }
+    });
+});
+
+document.querySelectorAll("[data-secao]").forEach((botao) => {
+    botao.addEventListener("click", () => {
+        const destino = Array.from(botoesNavegacao).find(
+            (item) => item.textContent.trim() === botao.dataset.secao
+        );
+        destino?.click();
     });
 });
 
@@ -654,24 +746,14 @@ async function carregarExemplares(livroId, lista) {
     lista.replaceChildren();
 
     try {
-        const [respostaAtivos, respostaDisponiveis] = await Promise.all([
-            fetch(`/livros/${livroId}/exemplares/ativos`),
-            fetch(`/livros/${livroId}/exemplares/disponiveis`)
-        ]);
-
-        for (const resposta of [respostaAtivos, respostaDisponiveis]) {
-            if (!resposta.ok) {
-                throw new Error(await mensagemDeErroDaResposta(resposta));
-            }
+        const resposta = await fetch(
+            `/livros/${livroId}/exemplares/resumo`
+        );
+        if (!resposta.ok) {
+            throw new Error(await mensagemDeErroDaResposta(resposta));
         }
 
-        const [exemplares, disponiveis] = await Promise.all([
-            respostaAtivos.json(),
-            respostaDisponiveis.json()
-        ]);
-        const idsDisponiveis = new Set(
-            disponiveis.map((exemplar) => String(exemplar.id))
-        );
+        const exemplares = await resposta.json();
 
         if (exemplares.length === 0) {
             const item = document.createElement("li");
@@ -682,7 +764,7 @@ async function carregarExemplares(livroId, lista) {
 
         exemplares.forEach((exemplar) => {
             const item = document.createElement("li");
-            const disponivel = idsDisponiveis.has(String(exemplar.id));
+            const disponivel = exemplar.disponivel;
             item.append(document.createTextNode(
                 `Exemplar ${exemplar.id} — patrimônio: ${exemplar.codigoPatrimonio} `
             ));
@@ -811,70 +893,71 @@ function mostrarMensagemEmprestimos(texto) {
     atualizarMensagemStatus(mensagemEmprestimos, texto);
 }
 
-async function carregarEmprestimos() {
+async function carregarEmprestimos(numeroPagina = 0, carregarOpcoes = true) {
     mensagemEmprestimos.hidden = true;
     listaEmprestimos.replaceChildren();
 
     try {
-        const [respostaUsuarios, respostaLivros, respostaEmprestimos] =
-            await Promise.all([
-                fetch("/usuarios"),
-                fetch("/livros"),
-                fetch("/emprestimos/ativos")
-            ]);
+        const parametros = new URLSearchParams({
+            page: String(numeroPagina),
+            size: String(TAMANHO_PAGINA_EMPRESTIMOS_ATIVOS)
+        });
+        const requisicoes = [
+            fetch(`/emprestimos/ativos/pagina?${parametros}`)
+        ];
+        if (carregarOpcoes) {
+            requisicoes.push(fetch("/usuarios"), fetch("/livros/exemplares/disponiveis"));
+        }
 
-        for (const resposta of [
-            respostaUsuarios,
-            respostaLivros,
-            respostaEmprestimos
-        ]) {
+        const respostas = await Promise.all(requisicoes);
+        for (const resposta of respostas) {
             if (!resposta.ok) {
                 throw new Error(await mensagemDeErroDaResposta(resposta));
             }
         }
 
-        const [usuarios, livros, emprestimos] = await Promise.all([
-            respostaUsuarios.json(),
-            respostaLivros.json(),
-            respostaEmprestimos.json()
+        const [paginaEmprestimos, usuarios, exemplaresDisponiveis] = await Promise.all([
+            respostas[0].json(),
+            carregarOpcoes ? respostas[1].json() : Promise.resolve(null),
+            carregarOpcoes ? respostas[2].json() : Promise.resolve(null)
         ]);
-
-        const exemplaresPorLivro = await Promise.all(
-            livros.map(async (livro) => {
-                const resposta = await fetch(
-                    `/livros/${livro.id}/exemplares/disponiveis`
+        if (carregarOpcoes) {
+            campoUsuarioEmprestimo.replaceChildren();
+            campoUsuarioEmprestimo.add(new Option("Selecione um usuário", ""));
+            usuarios.forEach((usuario) => {
+                campoUsuarioEmprestimo.add(
+                    new Option(`${usuario.nome} (ID ${usuario.id})`, usuario.id)
                 );
+            });
 
-                if (!resposta.ok) {
-                    throw new Error(await mensagemDeErroDaResposta(resposta));
-                }
-
-                return resposta.json();
-            })
-        );
-
-        campoUsuarioEmprestimo.replaceChildren();
-        campoUsuarioEmprestimo.add(new Option("Selecione um usuário", ""));
-        usuarios.forEach((usuario) => {
-            campoUsuarioEmprestimo.add(
-                new Option(`${usuario.nome} (ID ${usuario.id})`, usuario.id)
+            campoExemplarEmprestimo.replaceChildren();
+            campoExemplarEmprestimo.add(
+                new Option("Selecione um exemplar disponível", "")
             );
-        });
+            exemplaresDisponiveis.forEach((exemplar) => {
+                campoExemplarEmprestimo.add(new Option(
+                    `${exemplar.livroNome} — patrimônio ${exemplar.codigoPatrimonio}`,
+                    exemplar.id
+                ));
+            });
+        }
 
-        campoExemplarEmprestimo.replaceChildren();
-        campoExemplarEmprestimo.add(
-            new Option("Selecione um exemplar disponível", "")
-        );
-        exemplaresPorLivro.flat().forEach((exemplar) => {
-            campoExemplarEmprestimo.add(new Option(
-                `${exemplar.livro.nome} — patrimônio ${exemplar.codigoPatrimonio}`,
-                exemplar.id
-            ));
-        });
+        paginaEmprestimosAtivos = paginaEmprestimos.number;
+        totalPaginasEmprestimosAtivos = paginaEmprestimos.totalPages;
+        paginaAnteriorEmprestimosAtivos.disabled = paginaEmprestimos.first;
+        proximaPaginaEmprestimosAtivos.disabled = paginaEmprestimos.last;
+        paginacaoEmprestimosAtivos.hidden = paginaEmprestimos.totalPages <= 1;
+        paginaAtualEmprestimosAtivos.textContent = paginaEmprestimos.totalPages === 0
+            ? "Nenhuma página"
+            : `Página ${paginaEmprestimos.number + 1} de ${paginaEmprestimos.totalPages} ` +
+                `(${paginaEmprestimos.totalElements} empréstimos)`;
+        const emprestimos = paginaEmprestimos.content;
 
         if (emprestimos.length === 0) {
             const item = document.createElement("li");
-            item.textContent = "Nenhum empréstimo ativo.";
+            item.textContent = paginaEmprestimos.totalElements === 0
+                ? "Nenhum empréstimo ativo."
+                : "Não há mais empréstimos ativos nesta página.";
             listaEmprestimos.append(item);
             return true;
         }
@@ -941,6 +1024,18 @@ async function carregarEmprestimos() {
         return false;
     }
 }
+
+paginaAnteriorEmprestimosAtivos.addEventListener("click", () => {
+    if (paginaEmprestimosAtivos > 0) {
+        carregarEmprestimos(paginaEmprestimosAtivos - 1, false);
+    }
+});
+
+proximaPaginaEmprestimosAtivos.addEventListener("click", () => {
+    if (paginaEmprestimosAtivos + 1 < totalPaginasEmprestimosAtivos) {
+        carregarEmprestimos(paginaEmprestimosAtivos + 1, false);
+    }
+});
 
 formEmprestimo.addEventListener("submit", async (evento) => {
     evento.preventDefault();
@@ -1015,6 +1110,7 @@ async function renovarEmprestimo(emprestimoId) {
 
 botaoHistoricoEmprestimos.addEventListener("click", async () => {
     listaHistoricoEmprestimos.hidden = !listaHistoricoEmprestimos.hidden;
+    controlesPaginacaoHistorico.hidden = listaHistoricoEmprestimos.hidden;
     botaoHistoricoEmprestimos.textContent = listaHistoricoEmprestimos.hidden
         ? "Consultar histórico"
         : "Ocultar histórico";
@@ -1024,48 +1120,88 @@ botaoHistoricoEmprestimos.addEventListener("click", async () => {
     }
 });
 
-filtroHistoricoEmprestimos.addEventListener("change", renderizarHistoricoEmprestimos);
-filtroSituacaoEmprestimos.addEventListener("change", renderizarHistoricoEmprestimos);
+filtroHistoricoEmprestimos.addEventListener("change", () => {
+    paginaHistorico = 0;
+    carregarHistoricoEmprestimos();
+});
+filtroSituacaoEmprestimos.addEventListener("change", () => {
+    paginaHistorico = 0;
+    carregarHistoricoEmprestimos();
+});
+botaoPaginaAnteriorHistorico.addEventListener("click", () => {
+    if (paginaHistorico > 0) {
+        paginaHistorico -= 1;
+        carregarHistoricoEmprestimos();
+    }
+});
+botaoProximaPaginaHistorico.addEventListener("click", () => {
+    if (paginaHistorico + 1 < totalPaginasHistorico) {
+        paginaHistorico += 1;
+        carregarHistoricoEmprestimos();
+    }
+});
 
 async function carregarHistoricoEmprestimos() {
     listaHistoricoEmprestimos.replaceChildren();
 
     try {
-        const resposta = await fetch("/emprestimos");
+        if (!filtrosHistoricoCarregados) {
+            const [respostaUsuarios, respostaUsuariosInativos] = await Promise.all([
+                fetch("/usuarios"),
+                fetch("/usuarios/inativos")
+            ]);
+            for (const resposta of [respostaUsuarios, respostaUsuariosInativos]) {
+                if (!resposta.ok) {
+                    throw new Error(await mensagemDeErroDaResposta(resposta));
+                }
+            }
+
+            const [usuarios, usuariosInativos] = await Promise.all([
+                respostaUsuarios.json(),
+                respostaUsuariosInativos.json()
+            ]);
+            [...usuarios, ...usuariosInativos]
+                .sort((usuarioA, usuarioB) =>
+                    usuarioA.nome.localeCompare(usuarioB.nome, "pt-BR")
+                )
+                .forEach((usuario) => {
+                    filtroHistoricoEmprestimos.add(new Option(
+                        `${usuario.nome} (ID ${usuario.id})`,
+                        usuario.id
+                    ));
+                });
+            filtroHistoricoEmprestimos.disabled = usuarios.length +
+                usuariosInativos.length === 0;
+            filtroSituacaoEmprestimos.disabled = false;
+            filtrosHistoricoCarregados = true;
+        }
+
+        const parametros = new URLSearchParams({
+            page: String(paginaHistorico),
+            size: String(TAMANHO_PAGINA_HISTORICO)
+        });
+        if (filtroHistoricoEmprestimos.value) {
+            parametros.set("usuarioId", filtroHistoricoEmprestimos.value);
+        }
+        if (filtroSituacaoEmprestimos.value) {
+            parametros.set("situacao", filtroSituacaoEmprestimos.value);
+        }
+        const resposta = await fetch(`/emprestimos/historico?${parametros}`);
         if (!resposta.ok) {
             throw new Error(await mensagemDeErroDaResposta(resposta));
         }
 
-        historicoEmprestimos = await resposta.json();
-        const usuarios = new Map();
-        historicoEmprestimos.forEach((emprestimo) => {
-            usuarios.set(String(emprestimo.usuario.id), emprestimo.usuario.nome);
-        });
-
-        const usuarioSelecionado = filtroHistoricoEmprestimos.value;
-        filtroHistoricoEmprestimos.replaceChildren(
-            new Option("Todos os usuários", "")
-        );
-        [...usuarios.entries()]
-            .sort(([, nomeA], [, nomeB]) => nomeA.localeCompare(nomeB, "pt-BR"))
-            .forEach(([usuarioId, nome]) => {
-                filtroHistoricoEmprestimos.add(
-                    new Option(`${nome} (ID ${usuarioId})`, usuarioId)
-                );
-            });
-        filtroHistoricoEmprestimos.value = usuarios.has(usuarioSelecionado)
-            ? usuarioSelecionado
-            : "";
-        filtroHistoricoEmprestimos.disabled = usuarios.size === 0;
-        const situacoesDisponiveis = new Set(
-            historicoEmprestimos.map((emprestimo) => emprestimo.situacao)
-        );
-        [...filtroSituacaoEmprestimos.options].forEach((opcao) => {
-            opcao.disabled = Boolean(opcao.value) &&
-                !situacoesDisponiveis.has(opcao.value);
-        });
-        filtroSituacaoEmprestimos.disabled = situacoesDisponiveis.size === 0;
-
+        const pagina = await resposta.json();
+        historicoEmprestimos = pagina.content;
+        paginaHistorico = pagina.number;
+        totalPaginasHistorico = pagina.totalPages;
+        totalEmprestimosHistorico = pagina.totalElements;
+        botaoPaginaAnteriorHistorico.disabled = pagina.first;
+        botaoProximaPaginaHistorico.disabled = pagina.last;
+        paginaAtualHistorico.textContent = totalPaginasHistorico === 0
+            ? "Nenhuma página"
+            : `Página ${pagina.number + 1} de ${totalPaginasHistorico} ` +
+                `(${totalEmprestimosHistorico} empréstimos)`;
         renderizarHistoricoEmprestimos();
     } catch (erro) {
         mostrarMensagemEmprestimos(
@@ -1076,22 +1212,12 @@ async function carregarHistoricoEmprestimos() {
 
 function renderizarHistoricoEmprestimos() {
     listaHistoricoEmprestimos.replaceChildren();
-    const usuarioId = filtroHistoricoEmprestimos.value;
-    const emprestimos = usuarioId
-        ? historicoEmprestimos.filter(
-            (emprestimo) => String(emprestimo.usuario.id) === usuarioId
-        )
-        : historicoEmprestimos;
-    const situacaoSelecionada = filtroSituacaoEmprestimos.value;
-    const emprestimosFiltrados = situacaoSelecionada
-        ? emprestimos.filter(
-            (emprestimo) => emprestimo.situacao === situacaoSelecionada
-        )
-        : emprestimos;
 
-    if (emprestimosFiltrados.length === 0) {
+    if (historicoEmprestimos.length === 0) {
         const item = document.createElement("li");
-        item.textContent = historicoEmprestimos.length === 0
+        item.textContent = totalEmprestimosHistorico === 0 &&
+            !filtroHistoricoEmprestimos.value &&
+            !filtroSituacaoEmprestimos.value
             ? "Nenhum empréstimo registrado."
             : "Nenhum empréstimo corresponde aos filtros selecionados.";
         listaHistoricoEmprestimos.append(item);
@@ -1104,7 +1230,7 @@ function renderizarHistoricoEmprestimos() {
         RENOVADO: "Renovado"
     };
 
-    emprestimosFiltrados.forEach((emprestimo) => {
+    historicoEmprestimos.forEach((emprestimo) => {
         const item = document.createElement("li");
         const situacao = situacoes[emprestimo.situacao] ||
             emprestimo.situacao;
@@ -1160,16 +1286,43 @@ async function carregarUsuariosParaMultas() {
     }
 }
 
-async function carregarEmprestimosAtrasados() {
+paginaAnteriorAtrasados.addEventListener("click", () => {
+    if (paginaAtrasados > 0) {
+        carregarEmprestimosAtrasados(paginaAtrasados - 1);
+    }
+});
+
+proximaPaginaAtrasados.addEventListener("click", () => {
+    if (paginaAtrasados + 1 < totalPaginasAtrasados) {
+        carregarEmprestimosAtrasados(paginaAtrasados + 1);
+    }
+});
+
+async function carregarEmprestimosAtrasados(numeroPagina = 0) {
     listaEmprestimosAtrasados.replaceChildren();
 
     try {
-        const resposta = await fetch("/emprestimos/atrasados");
+        const parametros = new URLSearchParams({
+            page: String(numeroPagina),
+            size: String(TAMANHO_PAGINA_ATRASADOS)
+        });
+        const resposta = await fetch(`/emprestimos/atrasados/pagina?${parametros}`);
         if (!resposta.ok) {
             throw new Error(await mensagemDeErroDaResposta(resposta));
         }
 
-        const emprestimos = await resposta.json();
+        const pagina = await resposta.json();
+        paginaAtrasados = pagina.number;
+        totalPaginasAtrasados = pagina.totalPages;
+        paginaAnteriorAtrasados.disabled = pagina.first;
+        proximaPaginaAtrasados.disabled = pagina.last;
+        paginacaoAtrasados.hidden = pagina.totalPages <= 1;
+        paginaAtualAtrasados.textContent = pagina.totalPages === 0
+            ? "Nenhuma página"
+            : `Página ${pagina.number + 1} de ${pagina.totalPages} ` +
+                `(${pagina.totalElements} empréstimos)`;
+
+        const emprestimos = pagina.content;
         if (emprestimos.length === 0) {
             const item = document.createElement("li");
             item.textContent = "Nenhum empréstimo atrasado.";
@@ -1244,12 +1397,36 @@ async function devolverEmprestimoAtrasado(emprestimo) {
     }
 }
 
-campoUsuarioMultas.addEventListener("change", carregarMultasDoUsuario);
+campoUsuarioMultas.addEventListener("change", () => {
+    paginaPagamentos = 0;
+    carregarMultasDoUsuario();
+});
+
+paginaAnteriorPagamentos.addEventListener("click", () => {
+    if (paginaPagamentos > 0) {
+        carregarPaginaPagamentos(paginaPagamentos - 1).catch((erro) => {
+            mostrarMensagemMultas(
+                `Falha ao consultar pagamentos: ${erro.message}`
+            );
+        });
+    }
+});
+
+proximaPaginaPagamentos.addEventListener("click", () => {
+    if (paginaPagamentos + 1 < totalPaginasPagamentos) {
+        carregarPaginaPagamentos(paginaPagamentos + 1).catch((erro) => {
+            mostrarMensagemMultas(
+                `Falha ao consultar pagamentos: ${erro.message}`
+            );
+        });
+    }
+});
 
 async function carregarMultasDoUsuario() {
     const usuarioId = campoUsuarioMultas.value;
     listaMultas.replaceChildren();
     listaPagamentos.replaceChildren();
+    paginacaoPagamentos.hidden = true;
     saldoMultas.textContent = "";
     mensagemMultas.hidden = true;
 
@@ -1258,48 +1435,25 @@ async function carregarMultasDoUsuario() {
     }
 
     try {
-        const [respostaSaldo, respostaEmprestimos, respostaPagamentos] =
+        const [respostaResumo, pagamentosCarregados] =
             await Promise.all([
-                fetch(`/usuarios/${usuarioId}/multas/saldo-pendente`),
-                fetch(`/emprestimos/usuario/${usuarioId}`),
-                fetch(`/usuarios/${usuarioId}/pagamentos`)
+                fetch(`/usuarios/${usuarioId}/multas/resumo`),
+                carregarPaginaPagamentos(0)
             ]);
 
-        for (const resposta of [
-            respostaSaldo,
-            respostaEmprestimos,
-            respostaPagamentos
-        ]) {
-            if (!resposta.ok) {
-                throw new Error(await mensagemDeErroDaResposta(resposta));
-            }
+        if (!respostaResumo.ok) {
+            throw new Error(await mensagemDeErroDaResposta(respostaResumo));
         }
 
-        const [saldo, emprestimos, pagamentos] = await Promise.all([
-            respostaSaldo.json(),
-            respostaEmprestimos.json(),
-            respostaPagamentos.json()
-        ]);
-        saldoMultas.textContent = `Saldo total de multas pendentes: ${formatarMoeda(saldo)}`;
+        if (!pagamentosCarregados) {
+            return false;
+        }
 
-        const saldosPorEmprestimo = await Promise.all(
-            emprestimos.map(async (emprestimo) => {
-                const resposta = await fetch(
-                    `/emprestimos/${emprestimo.id}/pagamentos/saldo`
-                );
-                if (!resposta.ok) {
-                    throw new Error(await mensagemDeErroDaResposta(resposta));
-                }
-
-                return {
-                    emprestimo,
-                    saldo: Number(await resposta.json())
-                };
-            })
-        );
-
-        const multasPendentes = saldosPorEmprestimo.filter(
-            ({ saldo: saldoEmprestimo }) => saldoEmprestimo > 0
+        const resumo = await respostaResumo.json();
+        saldoMultas.textContent =
+            `Saldo total de multas pendentes: ${formatarMoeda(resumo.saldoTotal)}`;
+        const multasPendentes = resumo.saldosPorEmprestimo.filter(
+            ({ saldo }) => Number(saldo) > 0
         );
         if (multasPendentes.length === 0) {
             const item = document.createElement("li");
@@ -1307,12 +1461,12 @@ async function carregarMultasDoUsuario() {
             listaMultas.append(item);
         }
 
-        multasPendentes.forEach(({ emprestimo, saldo: saldoEmprestimo }) => {
+        multasPendentes.forEach((multa) => {
             const item = document.createElement("li");
             item.append(document.createTextNode(
-                `Empréstimo ${emprestimo.id} — ${emprestimo.exemplar.livro.nome}; ` +
-                `patrimônio ${emprestimo.exemplar.codigoPatrimonio}; ` +
-                `multa pendente: ${formatarMoeda(saldoEmprestimo)} `
+                `Empréstimo ${multa.emprestimoId} — ${multa.livroNome}; ` +
+                `patrimônio ${multa.codigoPatrimonio}; ` +
+                `multa pendente: ${formatarMoeda(multa.saldo)} `
             ));
 
             const formulario = document.createElement("form");
@@ -1325,7 +1479,7 @@ async function carregarMultasDoUsuario() {
             rotuloValor.textContent = "Valor do pagamento";
             campoValor.type = "number";
             campoValor.min = "0.01";
-            campoValor.max = saldoEmprestimo.toFixed(2);
+            campoValor.max = Number(multa.saldo).toFixed(2);
             campoValor.step = "0.01";
             campoValor.required = true;
 
@@ -1349,7 +1503,7 @@ async function carregarMultasDoUsuario() {
             formulario.addEventListener("submit", (evento) => {
                 evento.preventDefault();
                 registrarPagamentoMulta(
-                    emprestimo.id,
+                    multa.emprestimoId,
                     campoValor.value,
                     campoData.value
                 );
@@ -1358,25 +1512,53 @@ async function carregarMultasDoUsuario() {
             listaMultas.append(item);
         });
 
-        if (pagamentos.length === 0) {
-            const item = document.createElement("li");
-            item.textContent = "Nenhum pagamento registrado.";
-            listaPagamentos.append(item);
-            return true;
-        }
-
-        pagamentos.forEach((pagamento) => {
-            const item = document.createElement("li");
-            item.textContent =
-                `${pagamento.dataPagamento} — ${formatarMoeda(pagamento.valor)} ` +
-                `(empréstimo ${pagamento.emprestimo.id})`;
-            listaPagamentos.append(item);
-        });
         return true;
     } catch (erro) {
         mostrarMensagemMultas(`Falha ao consultar multas: ${erro.message}`);
         return false;
     }
+}
+
+async function carregarPaginaPagamentos(numeroPagina) {
+    const usuarioId = campoUsuarioMultas.value;
+    const parametros = new URLSearchParams({
+        page: String(numeroPagina),
+        size: String(TAMANHO_PAGINA_PAGAMENTOS)
+    });
+    const resposta = await fetch(
+        `/usuarios/${usuarioId}/pagamentos/historico?${parametros}`
+    );
+    if (!resposta.ok) {
+        throw new Error(await mensagemDeErroDaResposta(resposta));
+    }
+
+    const pagina = await resposta.json();
+    paginaPagamentos = pagina.number;
+    totalPaginasPagamentos = pagina.totalPages;
+    listaPagamentos.replaceChildren();
+    paginaAnteriorPagamentos.disabled = pagina.first;
+    proximaPaginaPagamentos.disabled = pagina.last;
+    paginacaoPagamentos.hidden = pagina.totalPages <= 1;
+    paginaAtualPagamentos.textContent = pagina.totalPages === 0
+        ? "Nenhuma página"
+        : `Página ${pagina.number + 1} de ${pagina.totalPages} ` +
+            `(${pagina.totalElements} pagamentos)`;
+
+    if (pagina.content.length === 0) {
+        const item = document.createElement("li");
+        item.textContent = "Nenhum pagamento registrado.";
+        listaPagamentos.append(item);
+        return true;
+    }
+
+    pagina.content.forEach((pagamento) => {
+        const item = document.createElement("li");
+        item.textContent =
+            `${pagamento.dataPagamento} — ${formatarMoeda(pagamento.valor)} ` +
+            `(empréstimo ${pagamento.emprestimoId})`;
+        listaPagamentos.append(item);
+    });
+    return true;
 }
 
 async function registrarPagamentoMulta(emprestimoId, valorPago, dataDePagamento) {
@@ -1402,3 +1584,5 @@ async function registrarPagamentoMulta(emprestimoId, valorPago, dataDePagamento)
         mostrarMensagemMultas(`Falha ao registrar pagamento: ${erro.message}`);
     }
 }
+
+carregarVisaoGeral();

@@ -1,5 +1,7 @@
 package com.example.cadastro.controller;
 
+import com.example.cadastro.dto.ResumoMultasUsuario;
+import com.example.cadastro.dto.PaginaPagamentosResposta;
 import com.example.cadastro.entities.PagamentoMulta;
 import com.example.cadastro.entities.Usuario;
 import com.example.cadastro.service.PagamentoMultaService;
@@ -8,6 +10,8 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -74,8 +78,40 @@ public class UsuarioController {
         return pagamentoMultaService.calcularSaldoMultasPendentesPorUsuario(usuarioId);
     }
 
+    @GetMapping("/{usuarioId}/multas/resumo")
+    public ResumoMultasUsuario consultarResumoMultasPendentesPorUsuario(
+            @PathVariable Long usuarioId
+    ) {
+        return pagamentoMultaService.consultarResumoMultasPendentesPorUsuario(usuarioId);
+    }
+
     @GetMapping("/{usuarioId}/pagamentos")
     public List<PagamentoMulta> listarPagamentosPorUsuario(@PathVariable Long usuarioId) {
         return pagamentoMultaService.listarPagamentosPorUsuario(usuarioId);
+    }
+
+    @GetMapping("/{usuarioId}/pagamentos/historico")
+    public PaginaPagamentosResposta listarHistoricoPagamentosPorUsuario(
+            @PathVariable Long usuarioId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size
+    ) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException(
+                    "A página deve ser não negativa e o tamanho deve estar entre 1 e 100"
+            );
+        }
+
+        return PaginaPagamentosResposta.de(
+                pagamentoMultaService.listarResumoPagamentosPorUsuario(
+                        usuarioId,
+                        PageRequest.of(
+                                page,
+                                size,
+                                Sort.by(Sort.Direction.ASC, "dataPagamento")
+                                        .and(Sort.by(Sort.Direction.ASC, "id"))
+                        )
+                )
+        );
     }
 }

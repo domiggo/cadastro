@@ -1,9 +1,12 @@
 package com.example.cadastro.service;
 
 import com.example.cadastro.entities.Emprestimo;
+import com.example.cadastro.entities.Exemplar;
+import com.example.cadastro.entities.LivrosModel;
 import com.example.cadastro.entities.PagamentoMulta;
 import com.example.cadastro.repository.EmprestimoRepository;
 import com.example.cadastro.repository.PagamentoMultaRepository;
+import com.example.cadastro.repository.TotalPagoPorEmprestimo;
 import com.example.cadastro.repository.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -295,27 +298,75 @@ class PagamentoMultaServiceTest {
         Emprestimo primeiro = new Emprestimo();
         primeiro.setId(11L);
         primeiro.setDataPrevistaDevolucao(hoje.minusDays(2));
+        primeiro.setExemplar(criarExemplar("Livro A", "PAT-11"));
 
         Emprestimo segundo = new Emprestimo();
         segundo.setId(12L);
         segundo.setDataPrevistaDevolucao(hoje.minusDays(5));
+        segundo.setExemplar(criarExemplar("Livro B", "PAT-12"));
 
         when(usuarioRepository.existsById(usuarioId)).thenReturn(true);
-        when(emprestimoRepository.findByUsuarioId(usuarioId))
+        when(emprestimoRepository.buscarComDadosParaMultasPorUsuario(usuarioId))
                 .thenReturn(List.of(primeiro, segundo));
-        when(pagamentoMultaRepository.somarPorEmprestimoId(11L))
-                .thenReturn(new BigDecimal("1.00"));
-        when(pagamentoMultaRepository.somarPorEmprestimoId(12L))
-                .thenReturn(new BigDecimal("2.00"));
+        TotalPagoPorEmprestimo totalPagoPrimeiro = mock(TotalPagoPorEmprestimo.class);
+        when(totalPagoPrimeiro.getEmprestimoId()).thenReturn(11L);
+        when(totalPagoPrimeiro.getTotalPago()).thenReturn(new BigDecimal("1.00"));
+        when(pagamentoMultaRepository.somarPorUsuarioAgrupadoPorEmprestimo(usuarioId))
+                .thenReturn(List.of(totalPagoPrimeiro));
 
         BigDecimal saldoEsperado =
                 primeiro.getMulta().subtract(new BigDecimal("1.00"))
-                        .add(segundo.getMulta().subtract(new BigDecimal("2.00")));
+                        .add(segundo.getMulta());
 
         BigDecimal resultado =
                 pagamentoMultaService.calcularSaldoMultasPendentesPorUsuario(usuarioId);
 
         assertEquals(saldoEsperado, resultado);
+        verify(pagamentoMultaRepository)
+                .somarPorUsuarioAgrupadoPorEmprestimo(usuarioId);
+        verify(pagamentoMultaRepository, never()).somarPorEmprestimoId(anyLong());
+    }
+
+    @Test
+    void deveRetornarSaldoPorEmprestimoEInformacoesDoExemplar() {
+        Long usuarioId = 1L;
+        Emprestimo emprestimo = new Emprestimo();
+        emprestimo.setId(11L);
+        emprestimo.setDataPrevistaDevolucao(hoje.minusDays(2));
+        emprestimo.setExemplar(criarExemplar("Livro A", "PAT-11"));
+
+        TotalPagoPorEmprestimo totalPago = mock(TotalPagoPorEmprestimo.class);
+        when(totalPago.getEmprestimoId()).thenReturn(11L);
+        when(totalPago.getTotalPago()).thenReturn(new BigDecimal("1.00"));
+        when(usuarioRepository.existsById(usuarioId)).thenReturn(true);
+        when(emprestimoRepository.buscarComDadosParaMultasPorUsuario(usuarioId))
+                .thenReturn(List.of(emprestimo));
+        when(pagamentoMultaRepository.somarPorUsuarioAgrupadoPorEmprestimo(usuarioId))
+                .thenReturn(List.of(totalPago));
+
+        var resumo =
+                pagamentoMultaService.consultarResumoMultasPendentesPorUsuario(usuarioId);
+
+        assertEquals(new BigDecimal("3.00"), resumo.saldoTotal());
+        assertEquals(
+                new BigDecimal("3.00"),
+                resumo.saldosPorEmprestimo().getFirst().saldo()
+        );
+        assertEquals("Livro A", resumo.saldosPorEmprestimo().getFirst().livroNome());
+        assertEquals("PAT-11", resumo.saldosPorEmprestimo().getFirst().codigoPatrimonio());
+        verify(pagamentoMultaRepository, times(1))
+                .somarPorUsuarioAgrupadoPorEmprestimo(usuarioId);
+        verify(pagamentoMultaRepository, never()).somarPorEmprestimoId(anyLong());
+    }
+
+    private Exemplar criarExemplar(String nomeLivro, String patrimonio) {
+        LivrosModel livro = new LivrosModel();
+        livro.setNome(nomeLivro);
+
+        Exemplar exemplar = new Exemplar();
+        exemplar.setLivro(livro);
+        exemplar.setCodigoPatrimonio(patrimonio);
+        return exemplar;
     }
 
     @Test
@@ -328,7 +379,24 @@ class PagamentoMultaServiceTest {
                 pagamentoMultaService.calcularSaldoMultasPendentesPorUsuario(usuarioId)
         );
 
-        verify(emprestimoRepository, never()).findByUsuarioId(usuarioId);
+        verify(emprestimoRepository, never())
+                .buscarComDadosParaMultasPorUsuario(usuarioId);
+        verifyNoInteractions(pagamentoMultaRepository);
+    }
+
+    @Test
+    void deveRetornarResumoVazioQuandoUsuarioNaoPossuirEmprestimos() {
+        Long usuarioId = 1L;
+        when(usuarioRepository.existsById(usuarioId)).thenReturn(true);
+        when(emprestimoRepository.buscarComDadosParaMultasPorUsuario(usuarioId))
+                .thenReturn(List.of());
+
+        var resumo =
+                pagamentoMultaService.consultarResumoMultasPendentesPorUsuario(usuarioId);
+
+        assertEquals(BigDecimal.ZERO, resumo.saldoTotal());
+        assertTrue(resumo.saldosPorEmprestimo().isEmpty());
+        verifyNoInteractions(pagamentoMultaRepository);
     }
 
     @Test

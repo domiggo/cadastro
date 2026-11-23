@@ -1,5 +1,6 @@
 package com.example.cadastro.controller;
 
+import com.example.cadastro.dto.ExemplarResumo;
 import com.example.cadastro.entities.Exemplar;
 import com.example.cadastro.service.ExemplarService;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,16 @@ public class ExemplarController {
     @GetMapping("/{livroId}/exemplares/disponiveis")
     public List<Exemplar> listarExemplaresDisponiveis(@PathVariable Long livroId) {
         return exemplarService.listarDisponiveisPorLivro(livroId);
+    }
+
+    @GetMapping("/exemplares/disponiveis")
+    public List<ExemplarResumo> listarTodosExemplaresDisponiveis() {
+        return exemplarService.listarTodosDisponiveis();
+    }
+
+    @GetMapping("/{livroId}/exemplares/resumo")
+    public List<ExemplarResumo> listarResumoExemplaresAtivos(@PathVariable Long livroId) {
+        return exemplarService.listarResumoAtivosPorLivro(livroId);
     }
 
     @PatchMapping("/{livroId}/exemplares/{exemplarId}/desativacao")
