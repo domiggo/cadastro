@@ -100,6 +100,13 @@ function atualizarMensagemStatus(elemento, texto) {
     elemento.hidden = false;
 }
 
+function adicionarMensagemListaVazia(lista, texto) {
+    const item = document.createElement("li");
+    item.classList.add("estado-vazio");
+    item.textContent = texto;
+    lista.append(item);
+}
+
 function mostrarMensagem(texto) {
     atualizarMensagemStatus(mensagemForm, texto);
 }
@@ -263,9 +270,7 @@ function renderizarUsuarios() {
     listaUsuarios.replaceChildren();
 
     if (usuariosCadastrados.length === 0) {
-        const item = document.createElement("li");
-        item.textContent = "Nenhum usuário cadastrado.";
-        listaUsuarios.append(item);
+        adicionarMensagemListaVazia(listaUsuarios, "Nenhum usuário cadastrado.");
         botaoMostrarUsuarios.hidden = true;
         return;
     }
@@ -453,9 +458,7 @@ function renderizarUsuariosInativos() {
     listaInativos.replaceChildren();
 
     if (usuariosInativos.length === 0) {
-        const item = document.createElement("li");
-        item.textContent = "Nenhum usuário inativo.";
-        listaInativos.append(item);
+        adicionarMensagemListaVazia(listaInativos, "Nenhum usuário inativo.");
         botaoMostrarInativos.hidden = true;
         return;
     }
@@ -564,9 +567,7 @@ async function carregarLivros() {
         listaLivros.hidden = false;
 
         if (livros.length === 0) {
-            const item = document.createElement("li");
-            item.textContent = "Nenhum livro cadastrado.";
-            listaLivros.append(item);
+            adicionarMensagemListaVazia(listaLivros, "Nenhum livro cadastrado.");
             return true;
         }
 
@@ -667,9 +668,7 @@ async function carregarLivrosInativos() {
 
         const livros = await resposta.json();
         if (livros.length === 0) {
-            const item = document.createElement("li");
-            item.textContent = "Nenhum livro inativo.";
-            listaLivrosInativos.append(item);
+            adicionarMensagemListaVazia(listaLivrosInativos, "Nenhum livro inativo.");
             return true;
         }
 
@@ -756,9 +755,7 @@ async function carregarExemplares(livroId, lista) {
         const exemplares = await resposta.json();
 
         if (exemplares.length === 0) {
-            const item = document.createElement("li");
-            item.textContent = "Este livro não possui exemplares ativos.";
-            lista.append(item);
+            adicionarMensagemListaVazia(lista, "Este livro não possui exemplares ativos.");
             return;
         }
 
@@ -816,9 +813,7 @@ async function carregarExemplaresInativos(livroId, listaInativos, listaAtivos) {
 
         const exemplares = await resposta.json();
         if (exemplares.length === 0) {
-            const item = document.createElement("li");
-            item.textContent = "Nenhum exemplar inativo.";
-            listaInativos.append(item);
+            adicionarMensagemListaVazia(listaInativos, "Nenhum exemplar inativo.");
             return;
         }
 
@@ -954,11 +949,10 @@ async function carregarEmprestimos(numeroPagina = 0, carregarOpcoes = true) {
         const emprestimos = paginaEmprestimos.content;
 
         if (emprestimos.length === 0) {
-            const item = document.createElement("li");
-            item.textContent = paginaEmprestimos.totalElements === 0
+            const texto = paginaEmprestimos.totalElements === 0
                 ? "Nenhum empréstimo ativo."
                 : "Não há mais empréstimos ativos nesta página.";
-            listaEmprestimos.append(item);
+            adicionarMensagemListaVazia(listaEmprestimos, texto);
             return true;
         }
 
@@ -1214,13 +1208,12 @@ function renderizarHistoricoEmprestimos() {
     listaHistoricoEmprestimos.replaceChildren();
 
     if (historicoEmprestimos.length === 0) {
-        const item = document.createElement("li");
-        item.textContent = totalEmprestimosHistorico === 0 &&
+        const texto = totalEmprestimosHistorico === 0 &&
             !filtroHistoricoEmprestimos.value &&
             !filtroSituacaoEmprestimos.value
             ? "Nenhum empréstimo registrado."
             : "Nenhum empréstimo corresponde aos filtros selecionados.";
-        listaHistoricoEmprestimos.append(item);
+        adicionarMensagemListaVazia(listaHistoricoEmprestimos, texto);
         return;
     }
 
@@ -1324,9 +1317,10 @@ async function carregarEmprestimosAtrasados(numeroPagina = 0) {
 
         const emprestimos = pagina.content;
         if (emprestimos.length === 0) {
-            const item = document.createElement("li");
-            item.textContent = "Nenhum empréstimo atrasado.";
-            listaEmprestimosAtrasados.append(item);
+            adicionarMensagemListaVazia(
+                listaEmprestimosAtrasados,
+                "Nenhum empréstimo atrasado."
+            );
             return true;
         }
 
@@ -1456,9 +1450,10 @@ async function carregarMultasDoUsuario() {
             ({ saldo }) => Number(saldo) > 0
         );
         if (multasPendentes.length === 0) {
-            const item = document.createElement("li");
-            item.textContent = "Este usuário não possui multas pendentes.";
-            listaMultas.append(item);
+            adicionarMensagemListaVazia(
+                listaMultas,
+                "Este usuário não possui multas pendentes."
+            );
         }
 
         multasPendentes.forEach((multa) => {
@@ -1545,9 +1540,7 @@ async function carregarPaginaPagamentos(numeroPagina) {
             `(${pagina.totalElements} pagamentos)`;
 
     if (pagina.content.length === 0) {
-        const item = document.createElement("li");
-        item.textContent = "Nenhum pagamento registrado.";
-        listaPagamentos.append(item);
+        adicionarMensagemListaVazia(listaPagamentos, "Nenhum pagamento registrado.");
         return true;
     }
 

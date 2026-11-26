@@ -187,6 +187,23 @@ Nesse modo, o console fica disponível em `http://localhost:8080/h2-console`,
 com JDBC URL `jdbc:h2:mem:cadastro`, usuário `sa` e senha vazia. Não habilite o
 console em ambientes acessíveis por outras pessoas ou em produção.
 
+Para persistir os dados em PostgreSQL, use o perfil `postgres`. Crie previamente
+um banco e um usuário no PostgreSQL e informe as credenciais por variáveis de
+ambiente; não há credenciais padrão no projeto:
+
+```bash
+SPRING_PROFILES_ACTIVE=postgres \
+DB_USERNAME=cadastro \
+DB_PASSWORD='sua-senha' \
+./mvnw spring-boot:run
+```
+
+Por padrão, o perfil conecta a `localhost:5432/cadastro`. É possível configurar
+`DB_HOST`, `DB_PORT` e `DB_NAME`, ou substituir a URL completa com `DB_URL`.
+Ao iniciar, Flyway cria/atualiza o esquema pelas migrações existentes e o
+Hibernate valida as entidades. Os dados que estavam no H2 não são transferidos
+automaticamente para o PostgreSQL.
+
 O esquema é criado e versionado pelo Flyway em `src/main/resources/db/migration`.
 Para alterar o banco, adicione uma nova migração versionada (por exemplo,
 `V2__descricao_da_alteracao.sql`); não edite uma migração que já tenha sido
