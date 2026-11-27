@@ -55,6 +55,19 @@ const botaoProximaPaginaHistorico = document.querySelector("#proxima-pagina-hist
 const paginaAtualHistorico = document.querySelector("#pagina-atual-historico");
 const TAMANHO_PAGINA_HISTORICO = 20;
 const TAMANHO_PAGINA_EMPRESTIMOS_ATIVOS = 20;
+const dialogoConfirmacaoEmprestimo =
+    document.querySelector("#confirmar-acao-emprestimo");
+const tituloConfirmacaoEmprestimo =
+    document.querySelector("#titulo-confirmacao-emprestimo");
+const descricaoConfirmacaoEmprestimo =
+    document.querySelector("#descricao-confirmacao-emprestimo");
+const iconeConfirmacaoEmprestimo =
+    document.querySelector("#icone-confirmacao-emprestimo");
+const botaoCancelarConfirmacaoEmprestimo =
+    document.querySelector("#cancelar-confirmacao-emprestimo");
+const botaoExecutarConfirmacaoEmprestimo =
+    document.querySelector("#executar-confirmacao-emprestimo");
+let acaoEmprestimoPendente = null;
 let paginaEmprestimosAtivos = 0;
 let totalPaginasEmprestimosAtivos = 0;
 let historicoEmprestimos = [];
@@ -958,11 +971,14 @@ async function carregarEmprestimos(numeroPagina = 0, carregarOpcoes = true) {
 
         emprestimos.forEach((emprestimo) => {
             const item = document.createElement("li");
+            item.classList.add("emprestimo-lista-item");
             const diasAtraso = Number(emprestimo.diasDeAtraso) || 0;
             const situacaoPrazo = diasAtraso > 0
                 ? `Atrasado há ${diasAtraso} dia(s)`
                 : `Devolução prevista: ${emprestimo.dataPrevistaDevolucao}`;
-            item.append(document.createTextNode(
+            const dados = document.createElement("div");
+            dados.classList.add("emprestimo-dados");
+            dados.append(document.createTextNode(
                 `Empréstimo ${emprestimo.id} — ${emprestimo.exemplar.livro.nome}, ` +
                 `patrimônio ${emprestimo.exemplar.codigoPatrimonio}; ` +
                 `${emprestimo.usuario.nome}; `
@@ -973,13 +989,21 @@ async function carregarEmprestimos(numeroPagina = 0, carregarOpcoes = true) {
                 diasAtraso > 0 ? "etiqueta-atrasado" : "etiqueta-no-prazo"
             );
             etiquetaPrazo.textContent = situacaoPrazo;
-            item.append(etiquetaPrazo, " ");
+            dados.append(etiquetaPrazo);
+
+            const acoes = document.createElement("div");
+            acoes.classList.add("emprestimo-acoes");
 
             const botaoDevolver = document.createElement("button");
             botaoDevolver.type = "button";
             botaoDevolver.textContent = "Registrar devolução";
             botaoDevolver.addEventListener("click", () => {
-                devolverEmprestimo(emprestimo.id);
+                abrirConfirmacaoEmprestimo(
+                    "devolucao",
+                    emprestimo.id,
+                    `${emprestimo.exemplar.livro.nome} — patrimônio ` +
+                    `${emprestimo.exemplar.codigoPatrimonio}`
+                );
             });
 
             const botaoRenovar = document.createElement("button");
@@ -1000,14 +1024,20 @@ async function carregarEmprestimos(numeroPagina = 0, carregarOpcoes = true) {
             botaoRenovar.disabled = !venceHoje;
             if (venceHoje) {
                 botaoRenovar.addEventListener("click", () => {
-                    renovarEmprestimo(emprestimo.id);
+                    abrirConfirmacaoEmprestimo(
+                        "renovacao",
+                        emprestimo.id,
+                        `${emprestimo.exemplar.livro.nome} — patrimônio ` +
+                        `${emprestimo.exemplar.codigoPatrimonio}`
+                    );
                 });
             } else {
                 botaoRenovar.title =
                     "A renovação só pode ser feita na data prevista para devolução.";
             }
 
-            item.append(botaoDevolver, " ", botaoRenovar);
+            acoes.append(botaoDevolver, botaoRenovar);
+            item.append(dados, acoes);
             listaEmprestimos.append(item);
         });
         return true;
@@ -1101,6 +1131,53 @@ async function renovarEmprestimo(emprestimoId) {
         );
     }
 }
+
+function abrirConfirmacaoEmprestimo(tipo, emprestimoId, descricao) {
+    acaoEmprestimoPendente = { tipo, emprestimoId };
+    const devolucao = tipo === "devolucao";
+
+    tituloConfirmacaoEmprestimo.textContent = devolucao
+        ? "Registrar devolução"
+        : "Renovar empréstimo";
+    descricaoConfirmacaoEmprestimo.textContent =
+        `${descricao}. Deseja confirmar esta ação?`;
+    iconeConfirmacaoEmprestimo.textContent = devolucao ? "↓" : "↻";
+    iconeConfirmacaoEmprestimo.classList.toggle("perigo", devolucao);
+    botaoExecutarConfirmacaoEmprestimo.textContent = devolucao
+        ? "Confirmar devolução"
+        : "Confirmar renovação";
+
+    dialogoConfirmacaoEmprestimo.showModal();
+}
+
+botaoCancelarConfirmacaoEmprestimo.addEventListener("click", () => {
+    acaoEmprestimoPendente = null;
+    dialogoConfirmacaoEmprestimo.close();
+});
+
+botaoExecutarConfirmacaoEmprestimo.addEventListener("click", async () => {
+    if (!acaoEmprestimoPendente) {
+        return;
+    }
+
+    const acao = acaoEmprestimoPendente;
+    acaoEmprestimoPendente = null;
+    botaoExecutarConfirmacaoEmprestimo.disabled = true;
+    dialogoConfirmacaoEmprestimo.close();
+
+    if (acao.tipo === "devolucao") {
+        await devolverEmprestimo(acao.emprestimoId);
+    } else {
+        await renovarEmprestimo(acao.emprestimoId);
+    }
+
+    botaoExecutarConfirmacaoEmprestimo.disabled = false;
+});
+
+dialogoConfirmacaoEmprestimo.addEventListener("close", () => {
+    acaoEmprestimoPendente = null;
+    botaoExecutarConfirmacaoEmprestimo.disabled = false;
+});
 
 botaoHistoricoEmprestimos.addEventListener("click", async () => {
     listaHistoricoEmprestimos.hidden = !listaHistoricoEmprestimos.hidden;

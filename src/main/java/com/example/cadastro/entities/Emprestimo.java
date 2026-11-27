@@ -52,6 +52,9 @@ public class Emprestimo {
     @Column(nullable = false)
     private SituacaoEmprestimo situacao = SituacaoEmprestimo.ATIVO;
 
+    @Column(name = "exemplar_id_ativo")
+    private Long exemplarIdAtivo;
+
     public void iniciar(Exemplar exemplar, Usuario usuario, LocalDate dataEmprestimo) {
         this.exemplar = exemplar;
         this.usuario = usuario;
@@ -60,6 +63,7 @@ public class Emprestimo {
         this.dataDevolucao = null;
         this.situacao = SituacaoEmprestimo.ATIVO;
         this.dataEncerramento = null;
+        this.exemplarIdAtivo = exemplar.getId();
     }
 
     public void registrarRenovacao(LocalDate dataRenovacao) {
@@ -73,6 +77,7 @@ public class Emprestimo {
 
         this.dataEncerramento = dataRenovacao;
         this.situacao = SituacaoEmprestimo.RENOVADO;
+        this.exemplarIdAtivo = null;
     }
 
     public void registrarDevolucao(LocalDate dataDevolucao) {
@@ -85,6 +90,7 @@ public class Emprestimo {
         }
         this.dataDevolucao = dataDevolucao;
         this.situacao = SituacaoEmprestimo.DEVOLVIDO;
+        this.exemplarIdAtivo = null;
     }
 
     public boolean isAtivo() {

@@ -356,6 +356,82 @@ main li button {
     margin: 4px 4px 4px 0;
 }
 
+.emprestimo-lista-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px 18px;
+}
+
+.emprestimo-dados {
+    min-width: 0;
+}
+
+.emprestimo-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.dialogo-confirmacao {
+    width: min(520px, calc(100vw - 32px));
+    padding: 22px;
+    border: 1px solid #d7e3dd;
+    border-radius: 14px;
+    box-shadow: 0 20px 48px rgb(21 54 44 / 22%);
+    color: #222;
+}
+
+.dialogo-confirmacao::backdrop {
+    background: rgb(17 48 39 / 48%);
+    backdrop-filter: blur(3px);
+}
+
+.cabecalho-dialogo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cabecalho-dialogo h3 {
+    margin: 0;
+}
+
+.icone-confirmacao {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 50%;
+    background: #e2f4e9;
+    color: #17613a;
+    font-weight: 800;
+}
+
+.icone-confirmacao.perigo {
+    background: #fde8e7;
+    color: #9c2823;
+}
+
+.dialogo-confirmacao p {
+    margin: 16px 0 20px;
+    color: #53665e;
+    line-height: 1.55;
+}
+
+.acoes-dialogo {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.botao-secundario {
+    border-color: #aebbb6;
+    background: white;
+    color: #53665e;
+}
+
 .etiqueta-status {
     display: inline-block;
     margin: 3px 6px 3px 0;
@@ -882,6 +958,20 @@ main li.estado-vazio:hover {
     #paginacao-atrasados,
     #paginacao-pagamentos {
         justify-content: center;
+    }
+
+    .emprestimo-lista-item {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .emprestimo-acoes,
+    .acoes-dialogo {
+        justify-content: stretch;
+    }
+
+    .emprestimo-acoes button,
+    .acoes-dialogo button {
+        flex: 1 1 180px;
     }
 }
 

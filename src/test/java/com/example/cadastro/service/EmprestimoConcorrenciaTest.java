@@ -12,8 +12,10 @@ import com.example.cadastro.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -28,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -103,6 +106,35 @@ class EmprestimoConcorrenciaTest {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    @Test
+    @Transactional
+    void deveImpedirPersistenciaDeSegundoEmprestimoAtivoDoMesmoExemplar() {
+        String sufixo = UUID.randomUUID().toString();
+        Usuario primeiroUsuario = criarUsuario("banco-primeiro-" + sufixo);
+        Usuario segundoUsuario = criarUsuario("banco-segundo-" + sufixo);
+
+        LivrosModel livro = new LivrosModel();
+        livro.setNome("Livro para invariante no banco " + sufixo);
+        livro = livrosRepository.save(livro);
+
+        Exemplar exemplar = new Exemplar();
+        exemplar.setLivro(livro);
+        exemplar.setCodigoPatrimonio("BANCO-" + sufixo);
+        exemplar = exemplarRepository.save(exemplar);
+
+        Emprestimo primeiro = new Emprestimo();
+        primeiro.iniciar(exemplar, primeiroUsuario, LocalDate.now());
+        emprestimoRepository.saveAndFlush(primeiro);
+
+        Emprestimo segundo = new Emprestimo();
+        segundo.iniciar(exemplar, segundoUsuario, LocalDate.now());
+
+        assertThrows(
+                DataIntegrityViolationException.class,
+                () -> emprestimoRepository.saveAndFlush(segundo)
+        );
     }
 
     @Test
